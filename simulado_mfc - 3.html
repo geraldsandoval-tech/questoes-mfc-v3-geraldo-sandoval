@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulado MFC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#050807;
+  --surface:#09130f;
+  --surface-2:#0d1b15;
+  --surface-3:#11241c;
+  --line:rgba(128,196,170,.11);
+  --line-2:rgba(128,196,170,.22);
+  --green:#1c5a42;
+  --green-2:#25735a;
+  --accent:#6cd4b3;
+  --accent-dim:rgba(108,212,179,.14);
+  --text:#d8e5df;
+  --text-2:#b3c6be;
+  --muted:#7f998f;
+  --ok:#3fb97c;
+  --ok-bg:rgba(63,185,124,.10);
+  --err:#e2575c;
+  --err-bg:rgba(226,87,92,.09);
+  --sans:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --r:10px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="dark"]{ color-scheme:dark; }
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 120px);background:var(--bg)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.mono{font-family:var(--mono)}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(5,8,7,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:880px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:8px}
+.counter{font-family:var(--mono);font-size:14px;color:var(--text-2);margin:0 auto 0 8px;white-space:nowrap}
+.counter b{color:var(--accent);font-weight:500}
+.counter .mode{color:var(--muted);font-size:12px;margin-left:8px}
+.tb-btn{background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13.5px;color:var(--text-2);cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s,background .15s}
+.tb-btn:hover{border-color:var(--line-2);color:var(--text)}
+.tb-btn.primary{border-color:var(--green-2);background:var(--green);color:#e9f5f0}
+.tb-btn.primary:hover{background:var(--green-2)}
+.tb-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
+.progress{max-width:880px;margin:0 auto;padding:0 20px 10px;display:flex;gap:2px}
+.seg{flex:1;min-width:0;height:5px;border-radius:2px;background:var(--surface-3);border:0;padding:0;cursor:pointer;position:relative}
+.seg.ok{background:var(--ok)}
+.seg.err{background:var(--err)}
+.seg.cur{box-shadow:0 0 0 1.5px var(--accent);background:var(--accent-dim)}
+.seg.cur.ok{background:var(--ok)}
+.seg.cur.err{background:var(--err)}
+.seg::after{content:"";position:absolute;inset:-8px 0}
+
+/* ---------- layout ---------- */
+main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+.view[hidden]{display:none}
+
+/* ---------- start ---------- */
+.start{min-height:calc(100vh - 160px);display:flex;flex-direction:column;justify-content:center;max-width:620px}
+.start .kicker{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.02em;margin:0 0 18px;display:flex;align-items:center;gap:10px}
+.start .kicker::before{content:"";width:22px;height:1px;background:var(--accent)}
+.start h1{font-weight:300;font-size:clamp(34px,6.4vw,56px);line-height:1.05;letter-spacing:-.02em;margin:0 0 20px}
+.start p{color:var(--text-2);margin:0 0 30px;max-width:52ch}
+.start p.author{font-size:15px;color:var(--accent);margin:-6px 0 14px}
+.stats{display:flex;gap:32px;margin:0 0 36px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat .n{font-family:var(--mono);font-size:26px;color:var(--text);line-height:1.2}
+.stat .l{font-size:13px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:1px solid var(--line-2);background:transparent;color:var(--text);border-radius:var(--r);padding:12px 22px;font-size:15px;font-weight:500;cursor:pointer;transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--green);border-color:var(--green-2);color:#ecf7f2}
+.btn.primary:hover{background:var(--green-2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.keys{margin-top:34px;display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--muted)}
+kbd{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--text-2);background:var(--surface)}
+
+/* ---------- question ---------- */
+.q-meta{display:flex;align-items:baseline;gap:14px;margin:0 0 18px;flex-wrap:wrap}
+.q-num{font-family:var(--mono);font-size:13px;color:var(--accent);border:1px solid var(--accent-dim);background:var(--accent-dim);border-radius:6px;padding:2px 8px}
+.q-tema{font-size:13.5px;color:var(--muted)}
+.q-case{font-size:17px;line-height:1.72;color:var(--text);max-width:70ch;margin:0 0 20px}
+.q-ask{font-size:17px;font-weight:500;color:#eef6f2;max-width:70ch;margin:0 0 22px}
+.figure{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:0 0 22px;overflow-x:auto}
+.figure svg{display:block;min-width:540px;width:100%;height:auto;max-width:680px}
+.figure figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
+.g-line{stroke:var(--text-2);stroke-width:1.5;fill:none}
+.g-rel{stroke:var(--accent);stroke-width:1.4;fill:none}
+.g-sym{fill:var(--surface-2);stroke:var(--text);stroke-width:1.5}
+.g-idx{fill:none;stroke:var(--accent);stroke-width:1.3}
+.g-txt{fill:var(--text);font:500 12.5px var(--sans)}
+.g-sub{fill:var(--muted);font:400 11.5px var(--sans)}
+.g-leg{fill:var(--text-2);font:400 12px var(--sans)}
+
+.opts{display:flex;flex-direction:column;gap:10px;margin:0 0 26px}
+.opt{display:flex;gap:14px;align-items:flex-start;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;cursor:pointer;font-size:15.5px;line-height:1.55;color:var(--text);transition:border-color .15s,background .15s}
+.opt:hover:not(:disabled){border-color:var(--green-2);background:var(--surface-2)}
+.opt:disabled{cursor:default}
+.opt .key{font-family:var(--mono);font-size:13px;flex:0 0 28px;height:28px;display:grid;place-items:center;border:1px solid var(--line-2);border-radius:7px;color:var(--text-2);margin-top:-1px}
+.opt.dim{opacity:.5}
+.opt.right{border-color:var(--ok);background:var(--ok-bg);opacity:1}
+.opt.right .key{border-color:var(--ok);background:var(--ok);color:#04130b}
+.opt.wrong{border-color:var(--err);background:var(--err-bg);opacity:1}
+.opt.wrong .key{border-color:var(--err);background:var(--err);color:#1a0405}
+
+.fb{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden;margin:0 0 28px}
+.fb-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);font-weight:500}
+.fb-head .dot{width:9px;height:9px;border-radius:50%}
+.fb.is-ok .fb-head{color:var(--ok)} .fb.is-ok .dot{background:var(--ok)}
+.fb.is-err .fb-head{color:var(--err)} .fb.is-err .dot{background:var(--err)}
+.fb-head .gab{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--text-2);font-weight:400}
+.fb-body{padding:6px 18px 16px}
+.fb-sec{padding:12px 0;border-bottom:1px solid var(--line)}
+.fb-sec:last-child{border-bottom:0}
+.fb-sec h3{font-size:13px;font-weight:500;color:var(--accent);margin:0 0 4px}
+.fb-sec p{margin:0;color:var(--text-2);font-size:15px;max-width:72ch}
+.fb-alts{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.fb-alts li{display:flex;gap:10px;font-size:14.5px;color:var(--text-2);line-height:1.5}
+.fb-alts .k{font-family:var(--mono);color:var(--err);flex:0 0 18px}
+
+.nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav .spacer{flex:1}
+.nav .hint{font-size:12.5px;color:var(--muted)}
+
+/* ---------- result ---------- */
+.result h2{font-weight:300;font-size:28px;margin:0 0 26px;letter-spacing:-.01em}
+.score{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap;padding:28px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 0 28px}
+.pct{font-family:var(--mono);font-size:clamp(64px,14vw,104px);line-height:.9;font-weight:500;color:var(--accent);letter-spacing:-.04em}
+.pct small{font-size:.4em;color:var(--muted);margin-left:4px}
+.breakdown{display:flex;gap:28px;padding-bottom:6px}
+.breakdown .n{font-family:var(--mono);font-size:24px}
+.breakdown .l{font-size:13px;color:var(--muted)}
+.n.ok{color:var(--ok)} .n.err{color:var(--err)} .n.blank{color:var(--text-2)}
+.result .summary{color:var(--text-2);margin:0 0 26px;max-width:60ch}
+.topics{margin:34px 0 0;border-top:1px solid var(--line);padding-top:24px;max-width:720px}
+.topics h3{font-size:16px;font-weight:500;margin:0 0 6px}
+.topics-tip{color:var(--text-2);font-size:14.5px;margin:0 0 16px}
+.topics ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.topics li{display:grid;grid-template-columns:minmax(0,1fr) 120px 110px;align-items:center;gap:14px;font-size:14.5px}
+.topics .tn{color:var(--text)}
+.topics .tbar{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.topics .tbar i{display:block;height:100%;border-radius:3px}
+.topics li.good .tbar i{background:var(--ok)} .topics li.mid .tbar i{background:var(--accent)} .topics li.bad .tbar i{background:var(--err)}
+.topics .tv{font-family:var(--mono);font-size:12.5px;color:var(--text-2);text-align:right}
+.topics li.bad .tv{color:var(--err)}
+@media (max-width:640px){.topics li{grid-template-columns:minmax(0,1fr) 92px;row-gap:4px}.topics .tbar{grid-column:1/-1;grid-row:2}}
+.result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:5px;margin:30px 0 0;max-width:620px}
+
+/* ---------- map ---------- */
+.map{position:absolute;right:20px;top:calc(100% + 6px);width:min(420px,calc(100vw - 32px));max-height:min(70vh,560px);overflow-y:auto;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:14px;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+.map[hidden]{display:none}
+.map-wrap{max-width:880px;margin:0 auto;position:relative}
+.filters{display:flex;gap:6px;margin:0 0 12px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 11px;font-size:12.5px;color:var(--text-2);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.cells{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.cell{font-family:var(--mono);font-size:12px;height:32px;padding:0;border-radius:7px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text-2);cursor:pointer}
+.cell.ok{border-color:rgba(63,185,124,.6);color:var(--ok);background:var(--ok-bg)}
+.cell.err{border-color:rgba(226,87,92,.6);color:var(--err);background:var(--err-bg)}
+.cell.cur{outline:1.5px solid var(--accent);outline-offset:1px}
+.map-empty{font-size:13px;color:var(--muted);padding:8px 2px}
+.map-legend{display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--muted)}
+.map-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(2,4,3,.72);display:grid;place-items:center;padding:20px}
+.modal[hidden]{display:none}
+.modal-box{width:min(420px,100%);background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:22px}
+.modal-box h3{margin:0 0 8px;font-size:17px;font-weight:500}
+.modal-box p{margin:0 0 20px;color:var(--text-2);font-size:15px}
+.modal-box .actions{justify-content:flex-end}
+
+@media (max-width:640px){
+  main{padding:24px 16px 64px}
+  .topbar-inner{padding:8px 12px;gap:6px;flex-wrap:wrap}
+  .progress{padding:0 12px 8px}
+  .tb-btn{padding:5px 9px;font-size:12.5px}
+  .counter{order:-1;flex-basis:100%;margin:0 0 4px 2px}
+  .q-case,.q-ask{font-size:16px}
+  .map{right:16px}
+  .cells{grid-template-columns:repeat(7,1fr)}
+  .stats{gap:22px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar" hidden>
+  <div class="topbar-inner">
+    <button class="tb-btn" id="btnHome" type="button">Início</button>
+    <div class="counter" id="counter" aria-live="polite"></div>
+    <button class="tb-btn" id="btnMap" type="button" aria-expanded="false" aria-controls="map">Mapa</button>
+    <button class="tb-btn" id="btnReset" type="button">Reiniciar</button>
+    <button class="tb-btn primary" id="btnFinish" type="button">Finalizar</button>
+  </div>
+  <div class="progress" id="progress" aria-label="Progresso"></div>
+  <div class="map-wrap">
+    <div class="map" id="map" hidden role="dialog" aria-label="Mapa de questões">
+      <div class="filters" role="group" aria-label="Filtrar questões">
+        <button class="chip" data-f="all" aria-pressed="true" type="button">Todas</button>
+        <button class="chip" data-f="err" aria-pressed="false" type="button">Erradas</button>
+        <button class="chip" data-f="blank" aria-pressed="false" type="button">Em branco</button>
+      </div>
+      <div class="cells" id="cells"></div>
+      <div class="map-legend"><span><i style="background:var(--ok)"></i>Certa</span><span><i style="background:var(--err)"></i>Errada</span><span><i style="background:var(--surface-3);border:1px solid var(--line-2)"></i>Em branco</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="view start" id="vStart">
+    <p class="kicker">Medicina de Família e Comunidade</p>
+    <h1>Simulado MFC</h1>
+    <p class="author">por Geraldo Sandoval</p>
+    <p>Casos clínicos de atenção primária para treinar decisão de conduta: território, saúde mental, ciclo de vida e organização do SUS.</p>
+    <div class="stats">
+      <div class="stat"><div class="n" id="sTotal">70</div><div class="l">questões</div></div>
+      <div class="stat"><div class="n" id="sDone">0</div><div class="l">respondidas</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">alternativas cada</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnStart" type="button">Iniciar</button>
+      <button class="btn" id="btnFresh" type="button" hidden>Começar do zero</button>
+    </div>
+    <div class="keys">
+      <span><kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> <kbd>D</kbd> responder</span>
+      <span><kbd>Enter</kbd> avançar</span>
+      <span><kbd>←</kbd> <kbd>→</kbd> navegar</span>
+    </div>
+  </section>
+
+  <section class="view" id="vQuiz" hidden></section>
+  <section class="view result" id="vResult" hidden></section>
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="mTitle" aria-describedby="mText">
+    <h3 id="mTitle"></h3>
+    <p id="mText"></p>
+    <div class="actions">
+      <button class="btn" id="mCancel" type="button">Cancelar</button>
+      <button class="btn primary" id="mOk" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   BANCO DE QUESTÕES
+   ===================================================================== */
+const LEGENDA = `
+  <!-- legenda -->
+  <line x1="478" y1="14" x2="478" y2="276" stroke="var(--line-2)"/>
+  <text class="g-txt" x="496" y="30">Legenda</text>
+  <rect class="g-sym" x="496" y="44" width="14" height="14"/><text class="g-leg" x="520" y="55">Homem</text>
+  <circle class="g-sym" cx="503" cy="75" r="7"/><text class="g-leg" x="520" y="79">Mulher</text>
+  <circle class="g-idx" cx="503" cy="99" r="10"/><circle class="g-sym" cx="503" cy="99" r="6.5"/><text class="g-leg" x="520" y="103">Pessoa atendida</text>
+  <line class="g-line" x1="494" y1="127" x2="512" y2="127"/><text class="g-leg" x="520" y="131">União</text>
+  <polyline class="g-rel" points="494,152 497,146 500,158 503,146 506,158 509,146 512,152"/><text class="g-leg" x="520" y="156">Conflito</text>
+  <line class="g-rel" x1="494" y1="176" x2="512" y2="176"/><line class="g-rel" x1="494" y1="180" x2="512" y2="180"/><line class="g-rel" x1="494" y1="184" x2="512" y2="184"/><text class="g-leg" x="520" y="184">Muito próxima</text>
+  <line class="g-rel" x1="494" y1="208" x2="512" y2="208" stroke-dasharray="4 3"/><text class="g-leg" x="520" y="212">Distante</text>
+`;
+
+const GENOGRAMA = `
+<svg viewBox="0 0 650 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Genograma de três gerações da família de Rosana, com legenda">
+  <!-- relações (desenhadas antes dos símbolos) -->
+  <polyline class="g-rel" points="282,76 280.2,88.3 267.8,89.4 272.2,101.1 259.8,102.2 264.2,113.9 251.8,115 256.2,126.7 243.8,127.8 242,140"/>
+  <line class="g-rel" x1="228" y1="168" x2="249" y2="226"/>
+  <line class="g-rel" x1="231.8" y1="166.6" x2="252.8" y2="224.6"/>
+  <line class="g-rel" x1="224.2" y1="169.4" x2="245.2" y2="227.4"/>
+  <line class="g-rel" x1="388" y1="165" x2="362" y2="224" stroke-dasharray="5 4"/>
+  <!-- estrutura -->
+  <line class="g-line" x1="184" y1="64" x2="276" y2="64"/>
+  <line class="g-line" x1="230" y1="64" x2="230" y2="132"/>
+  <line class="g-line" x1="248" y1="150" x2="366" y2="150"/>
+  <line class="g-line" x1="305" y1="150" x2="305" y2="205"/>
+  <line class="g-line" x1="260" y1="205" x2="350" y2="205"/>
+  <line class="g-line" x1="260" y1="205" x2="260" y2="221"/>
+  <line class="g-line" x1="350" y1="205" x2="350" y2="221"/>
+  <!-- geração I -->
+  <rect class="g-sym" x="156" y="50" width="28" height="28"/>
+  <text class="g-txt" x="170" y="24" text-anchor="middle">Sebastião</text>
+  <text class="g-sub" x="170" y="38" text-anchor="middle">falecido, etilismo</text>
+  <circle class="g-sym" cx="290" cy="64" r="14"/>
+  <text class="g-txt" x="290" y="24" text-anchor="middle">Célia, 72</text>
+  <text class="g-sub" x="290" y="38" text-anchor="middle">hipertensão</text>
+  <!-- geração II -->
+  <circle class="g-idx" cx="230" cy="150" r="18.5"/>
+  <circle class="g-sym" cx="230" cy="150" r="14"/>
+  <text class="g-txt" x="202" y="147" text-anchor="end">Rosana, 44</text>
+  <text class="g-sub" x="202" y="161" text-anchor="end">pessoa atendida</text>
+  <rect class="g-sym" x="366" y="136" width="28" height="28"/>
+  <text class="g-txt" x="404" y="147">Cláudio, 47</text>
+  <text class="g-sub" x="404" y="161">etilismo</text>
+  <!-- geração III -->
+  <circle class="g-sym" cx="260" cy="235" r="14"/>
+  <text class="g-txt" x="260" y="268" text-anchor="middle">Luana, 10</text>
+  <rect class="g-sym" x="336" y="221" width="28" height="28"/>
+  <text class="g-txt" x="350" y="268" text-anchor="middle">Kaio, 16</text>
+  ${LEGENDA}
+</svg>`;
+
+const BASE = [
+{
+  t:1,
+  tema:"Abordagem familiar — genograma",
+  caso:"Rosana, 44 anos, costureira, procura a UBS por insônia e cefaleia tensional há dois meses. Para compreender o contexto, a médica de família constrói com ela o genograma abaixo, usando a legenda padronizada da unidade. Rosana conta que o pai, Sebastião, falecido há cinco anos, “bebia todos os dias”, e que o marido, Cláudio, “chega do serviço e vai direto para o bar”.",
+  figura:GENOGRAMA,
+  legenda:"Genograma de três gerações registrado no prontuário.",
+  pergunta:"Qual leitura do genograma orienta de forma mais adequada o plano de cuidado?",
+  opcoes:[
+    "Prever que Kaio desenvolverá uso abusivo de álcool e iniciar rastreamento específico apenas para ele",
+    "Mapear, a partir das linhas, as conexões da família com serviços e grupos da comunidade que funcionam como apoio",
+    "Ler a repetição do uso de álcool em duas gerações e as tensões relacionais como hipóteses a explorar com Rosana",
+    "Retirar Dona Célia da rede de apoio de Rosana, já que a linha entre elas registra um conflito definitivo"
+  ],
+  correta:2,
+  pista:"O mesmo problema (uso diário de álcool) aparece no pai e no marido de Rosana; há conflito com a mãe, relação muito próxima com Luana e distanciamento entre Cláudio e Kaio — tudo isso surge junto a queixas inespecíficas (insônia, cefaleia).",
+  conceito:"O genograma representa a estrutura e as relações familiares ao longo de gerações, tornando visíveis eventos relevantes e padrões relacionais. É ferramenta para levantar hipóteses e planejar o cuidado junto à pessoa — apoia, mas não substitui a escuta, e o registro deve ser revisado com a família.",
+  erros:{
+    0:"Converte um padrão familiar em previsão determinista sobre alguém que nem é o paciente; o genograma levanta hipóteses, não sentencia desfechos.",
+    1:"Descreve o ecomapa, que mostra vínculos com serviços e recursos comunitários; o genograma retrata estrutura e relações internas da família.",
+    3:"Conflito registrado não é ruptura nem decisão da equipe; quem apoia e com quem é difícil contar se investiga na escuta, com a própria Rosana."
+  }
+},
+{
+  t:2,
+  tema:"PNAB e organização da atenção básica",
+  caso:"Na UBS Parque Industrial, a recepção entrega 12 fichas por dia para consulta médica e orienta que qualquer outro caso “procure a UPA”. Enfermeira e técnicos de enfermagem atendem apenas procedimentos agendados. Em três meses, a UPA registrou aumento de atendimentos por queixas simples de moradores da área, e pessoas com diabetes descompensado deixaram de ser acompanhadas. A coordenação convoca a equipe para rever o processo de trabalho.",
+  pergunta:"Qual reorganização está mais alinhada à Política Nacional de Atenção Básica?",
+  opcoes:[
+    "Acolher toda demanda pela equipe, com escuta e avaliação de risco, integrando demanda espontânea e programada",
+    "Manter as fichas diárias e formalizar, por protocolo escrito, o encaminhamento de toda queixa aguda à UPA de referência",
+    "Aumentar para 20 as fichas médicas diárias, mantendo a enfermagem restrita aos procedimentos agendados da unidade",
+    "Transferir o acompanhamento dos diabéticos ao ambulatório de endocrinologia, liberando a agenda para os casos agudos"
+  ],
+  correta:0,
+  pista:"Fichas limitadas, recusa da demanda, enfermagem fora do acolhimento, deslocamento das queixas simples para a UPA e perda do seguimento dos crônicos.",
+  conceito:"A PNAB define a APS como porta de entrada preferencial, organizada em trabalho de equipe e guiada pelo imperativo ético de que toda demanda, necessidade de saúde ou sofrimento deve ser acolhido, observando risco e vulnerabilidade. Necessidades agudas e programadas convivem no mesmo serviço.",
+  erros:{
+    1:"Oficializa a recusa e desloca a porta de entrada para a urgência, contrariando o papel de primeiro contato da APS.",
+    2:"Amplia a oferta médica, mas mantém a lógica de fichas e deixa a equipe fora do acolhimento — o problema é o processo, não só o número de vagas.",
+    3:"Condições crônicas prevalentes são manejadas na APS; transferi-las rompe longitudinalidade e coordenação do cuidado."
+  }
+},
+{
+  t:3,
+  tema:"Território de alta vulnerabilidade",
+  caso:"A equipe de Saúde da Família do Morro do Cruzeiro, área com esgoto a céu aberto e abastecimento de água intermitente, atendeu 38 crianças com diarreia aguda nas últimas seis semanas, a maioria moradora de três ruas próximas a um córrego. Lideranças da associação de moradores procuram a unidade dizendo que “já cansaram de palestras” e que o problema se repete todo verão.",
+  pergunta:"Qual conduta da equipe é mais adequada diante desse cenário?",
+  opcoes:[
+    "Realizar palestras semanais sobre lavagem das mãos e cuidado com a água, elaboradas pela equipe e ministradas na UBS",
+    "Notificar a vigilância sanitária e registrar o saneamento como problema fora do escopo de atuação da unidade de saúde",
+    "Priorizar o tratamento clínico individual das crianças doentes, aguardando a redução sazonal dos casos no outono",
+    "Construir com moradores e outros setores um plano com metas, responsáveis e indicadores para as ruas mais afetadas"
+  ],
+  correta:3,
+  pista:"Casos concentrados em ruas específicas, determinante ambiental evidente (saneamento), recorrência anual e uma comunidade que pede algo além de palestras.",
+  conceito:"Determinantes sociais raramente se resolvem só dentro da UBS: exigem ação intersetorial (saneamento, assistência social, escola, lideranças), construída com a comunidade — não apenas para ela —, com objetivo, responsáveis, indicadores e revisão de resultados. Equidade e proporcionalidade orientam a priorização das áreas mais atingidas.",
+  erros:{
+    0:"Ação feita para a comunidade, não com ela, e que ignora o determinante ambiental — justamente o formato que as lideranças já rejeitaram.",
+    1:"Notificar não encerra a responsabilidade sanitária da equipe pelo território; cabe à APS articular a rede intersetorial.",
+    2:"Tratar casos isolados sem agir sobre a causa mantém o ciclo; a APS atua no âmbito individual e coletivo."
+  }
+},
+{
+  t:4,
+  tema:"Saúde mental — depressão",
+  caso:"Tereza, 38 anos, caixa de supermercado, iniciou sertralina há seis meses por episódio depressivo moderado. Há dois meses está sem sintomas: voltou a trabalhar, dorme bem e retomou a caminhada com as amigas. Nunca teve episódios de euforia. Na consulta, diz: “Já estou curada, quero parar o remédio a partir de hoje”. Questionada diretamente, nega pensamentos de morte.",
+  pergunta:"Qual é a conduta mais adequada nesta reavaliação?",
+  opcoes:[
+    "Suspender a sertralina hoje, já que a remissão completa dos sintomas encerra a indicação do antidepressivo",
+    "Manter a sertralina, explicar o risco de recaída nesta fase e combinar redução gradual ao término do período",
+    "Aumentar a dose da sertralina para consolidar a resposta obtida e prevenir novos episódios no futuro",
+    "Substituir a sertralina por tricíclico, mais adequado para a fase de manutenção prolongada do tratamento"
+  ],
+  correta:1,
+  pista:"Remissão há apenas dois meses, desejo de suspensão abrupta, ausência de história de mania e de ideação suicida.",
+  conceito:"Após a fase aguda (primeiros 2 a 6 meses), segue-se a fase de manutenção (4 a 9 meses após a remissão), cujo objetivo é manter a melhora e evitar recaídas. O antidepressivo é usado por 6 a 12 meses, com redução gradual. Psicoeducação e decisão compartilhada sustentam a adesão, e o risco de suicídio é questionado em toda consulta.",
+  erros:{
+    0:"Suspensão imediata e abrupta logo no início da manutenção aumenta o risco de recaída e ignora a redução gradual.",
+    2:"Não há perda de resposta que justifique aumento de dose; a paciente está em remissão.",
+    3:"Tricíclicos são alternativa com mais efeitos adversos, não opção preferencial para manter uma resposta já obtida com ISRS."
+  }
+},
+{
+  t:5,
+  tema:"Estrutura da equipe de Saúde da Família",
+  caso:"Ao planejar equipes para um novo loteamento, a secretaria municipal copia a planilha usada em 2012 para definir quais profissionais comporão cada equipe e a jornada semanal de cada um, aplicando o mesmo modelo às equipes de Saúde da Família e às demais modalidades da atenção básica. Não há cadastro territorial atualizado, e o gestor pretende definir o número de agentes comunitários apenas dividindo o total de domicílios em partes iguais.",
+  pergunta:"Qual orientação corrige o planejamento de forma mais adequada?",
+  opcoes:[
+    "Aplicar a planilha antiga a todas as modalidades, pois composição e jornada são parâmetros fixos desde a criação da atenção básica",
+    "Dispensar os agentes comunitários de saúde, que podem ser substituídos pelo aumento de consultas médicas na unidade",
+    "Definir composição e jornada pela preferência dos profissionais contratados e ajustar o território somente depois",
+    "Conferir os parâmetros vigentes de cada modalidade e distribuir microáreas com cadastro atualizado, barreiras e vulnerabilidades"
+  ],
+  correta:3,
+  pista:"Planilha antiga, modelo único para modalidades diferentes, ausência de cadastro e divisão igualitária de domicílios sem considerar o território.",
+  conceito:"Parâmetros normativos de composição e jornada diferem por modalidade de equipe e mudam com atualizações vigentes. A organização do trabalho considera atribuições, cobertura e necessidades locais, e as microáreas devem ter distribuição factível, com base em dados atuais e cadastro, considerando barreiras e vulnerabilidades.",
+  erros:{
+    0:"Ignora que os parâmetros variam por modalidade e sofrem atualizações; a política não é um molde congelado.",
+    1:"O agente comunitário é eixo da Saúde da Família (herdeira do PACS) no vínculo com o território e na busca ativa; consultas não o substituem.",
+    2:"O dimensionamento parte das necessidades do território e das atribuições da equipe, não da conveniência individual."
+  }
+},
+{
+  t:6,
+  tema:"População em situação de rua",
+  caso:"Josué, 49 anos, vive nas ruas do centro há 11 anos. Chega à UBS acompanhado por uma agente do Consultório na Rua, com tosse há cerca de um mês, emagrecimento e uma mancha clara e dormente no dorso da mão. A recepcionista informa que ele não pode ser atendido porque não tem comprovante de endereço nem cartão do SUS, e sugere que procure o hospital de referência.",
+  pergunta:"Qual é a conduta mais adequada da equipe?",
+  opcoes:[
+    "Atender hoje, investigar tuberculose e hanseníase e pactuar o seguimento com a equipe do Consultório na Rua",
+    "Orientar Josué a providenciar documentos e comprovante na assistência social antes de abrir prontuário na unidade",
+    "Encaminhar Josué ao hospital de referência, que dispõe de mais recursos para investigar as duas suspeitas clínicas",
+    "Agendar consulta para a próxima semana, quando a agente do Consultório na Rua poderá garantir o comparecimento"
+  ],
+  correta:0,
+  pista:"Duas suspeitas clínicas relevantes (tosse prolongada com emagrecimento; mancha hipoestésica), barreira puramente administrativa e vínculo já construído pelo Consultório na Rua.",
+  conceito:"Universalidade: o atendimento independe de local de moradia, emprego ou renda. Equidade: oferecer mais a quem mais precisa. A vulnerabilidade orienta a oferta e não pode virar barreira. UBS e Consultório na Rua compõem a APS, primeiro contato e coordenadora do cuidado — cada contato com pessoa de difícil acesso deve ser aproveitado.",
+  erros:{
+    1:"Transforma a vulnerabilidade em barreira administrativa; o direito ao atendimento independe de moradia ou documentação.",
+    2:"A investigação inicial está no escopo da APS; desviar para o hospital rompe o primeiro contato e o vínculo construído.",
+    3:"Adiar desperdiça o contato com pessoa de difícil acesso e com quadro que exige investigação oportuna."
+  }
+},
+{
+  t:7,
+  tema:"Saúde do adolescente — ética e contracepção",
+  caso:"Yasmin, 15 anos, vem sozinha à UBS; é sua primeira consulta desde os 12 anos. Conta que namora há cinco meses um colega de 16 anos, que já têm relações sexuais e que “às vezes” usam preservativo. Pede para começar a tomar pílula e diz que a mãe não sabe do namoro. Não tem queixas, e não há sinais de violência ou coerção no relato.",
+  pergunta:"Qual é o plano mais completo e adequado para esta consulta?",
+  opcoes:[
+    "Prescrever a pílula e orientar que, com ela em uso, o preservativo passa a ser dispensável no relacionamento estável",
+    "Orientar sobre métodos, mas condicionar as triagens de IST à autorização da mãe em uma próxima consulta conjunta",
+    "Ofertar contraceptivo e preservativo e triagem de HIV, sífilis, clamídia e gonorreia, mantendo o sigilo da consulta",
+    "Acolher a demanda, mas comunicar a mãe sobre a vida sexual da filha, pois a idade exige participação dos responsáveis"
+  ],
+  correta:2,
+  pista:"Adolescente sexualmente ativa, com uso irregular de preservativo, 15 anos, desacompanhada, sem qualquer situação de risco de vida.",
+  conceito:"Sexualidade é tema confidencial na consulta do adolescente; a quebra de sigilo só se justifica por risco de vida (suicídio, violência grave), sempre comunicada ao adolescente. ECA e CFM reconhecem autonomia progressiva. A abordagem inclui oferta de contraceptivos e preservativos, triagem de HIV a partir dos 15 anos, sífilis anual em sexualmente ativos e clamídia/gonorreia em meninas sexualmente ativas até 24 anos.",
+  erros:{
+    0:"O preservativo continua indicado para prevenção de IST; o uso irregular é justamente um risco a ser abordado.",
+    1:"Condicionar o cuidado aos responsáveis viola a confidencialidade e desestimula o retorno da adolescente.",
+    3:"A idade isolada não justifica quebra de sigilo; só o risco de vida a autoriza, com comunicação à adolescente."
+  }
+},
+{
+  t:8,
+  tema:"Resolutividade da APS",
+  caso:"Auditoria da regulação municipal mostra que uma equipe de Saúde da Família encaminhou ao nível secundário 42% das pessoas atendidas no último ano, incluindo hipertensão sem complicações, lombalgia mecânica, depressão leve e pré-natal de risco habitual. As filas para cardiologia e psiquiatria passam de oito meses, e muitos pacientes voltam sem contrarreferência.",
+  pergunta:"Qual análise e conduta são mais adequadas para a gestão?",
+  opcoes:[
+    "O percentual é esperado, pois a APS funciona sobretudo como triagem que direciona os casos aos especialistas",
+    "Há baixa resolutividade; qualificar a equipe com apoio matricial e protocolos, encaminhando só o que excede a APS",
+    "O problema é a oferta especializada; ampliar consultas de cardiologia e psiquiatria resolve a fila sem mudar a equipe",
+    "Os casos deveriam ser direcionados ao nível terciário, que concentra maior tecnologia para resolução definitiva"
+  ],
+  correta:1,
+  pista:"42% de encaminhamentos de condições comuns e manejáveis na APS, filas longas e ausência de contrarreferência.",
+  conceito:"Na pirâmide de atenção, o nível primário (PSF e UBS) responde por cerca de 80% dos problemas de saúde, o secundário por 15% e o terciário por 5%. Resolubilidade é o serviço estar capacitado para resolver o problema até o nível de sua complexidade. Apoio matricial amplia a resolutividade e a autonomia da APS.",
+  erros:{
+    0:"A APS não é mera triagem: é a base do sistema e resolve cerca de 80% dos problemas de saúde.",
+    2:"Ampliar a oferta especializada sem qualificar a APS perpetua encaminhamentos desnecessários e fragmenta o cuidado.",
+    3:"O nível terciário responde por cerca de 5% dos problemas; condições comuns pertencem à APS."
+  }
+},
+{
+  t:9,
+  tema:"Gestão populacional de condições crônicas",
+  caso:"Em dois anos, o número de pessoas com hipertensão e diabetes cadastradas na equipe da Vila São Jorge passou de 410 para 620. Em reunião, surgem três propostas: um mutirão de aferição de pressão num sábado, um grupo semanal de caminhada e o encaminhamento de todos os diabéticos ao endocrinologista. Ninguém sabe informar quantos estão controlados nem em que áreas os casos se concentram.",
+  pergunta:"Qual deve ser o primeiro passo da equipe para responder de forma efetiva?",
+  opcoes:[
+    "Fazer diagnóstico local com cadastro, prontuários e escuta da comunidade e planejar com metas e indicadores",
+    "Realizar o mutirão de aferição no sábado, que amplia a identificação de novos casos e dá visibilidade à equipe",
+    "Encaminhar todos os diabéticos ao endocrinologista e manter na APS apenas o acompanhamento dos hipertensos",
+    "Iniciar o grupo de caminhada, pois atividade física beneficia todas as pessoas com hipertensão e diabetes"
+  ],
+  correta:0,
+  pista:"Crescimento expressivo das DCNT, mas ninguém sabe quantos estão controlados nem onde estão — as ações propostas precedem qualquer diagnóstico e não têm como ser avaliadas.",
+  conceito:"Territorialização e planejamento: combinar dados epidemiológicos, cadastro, escuta comunitária e observação do território; definir objetivo, responsáveis, indicadores e revisão dos resultados (fechar o ciclo). O MFC decide com base na prevalência e incidência na comunidade, e condições crônicas prevalentes são cuidadas na APS.",
+  erros:{
+    1:"Ação pontual sem seguimento identifica casos, mas não organiza o cuidado de quem já está descompensado.",
+    2:"Diabetes é condição prevalente manejada na APS; encaminhar todos sobrecarrega o secundário e fragmenta o cuidado.",
+    3:"Pode integrar o plano, mas escolher a ação antes de conhecer a situação do território inverte o planejamento."
+  }
+},
+{
+  t:10,
+  tema:"Saúde mental — culpa e abulia",
+  caso:"Edson, 52 anos, mecânico, é trazido pela filha. Há cinco semanas não abre a oficina, passa o dia deitado e não consegue iniciar tarefas simples. Diz sentir-se “um peso para a família” e culpado por dívidas antigas. Dorme mal e perdeu 4 kg. PHQ-9 de 19 pontos. Nega episódios prévios de euforia ou de redução da necessidade de sono. Questionado diretamente, nega ideação, plano ou intenção suicida. Não há sintomas psicóticos.",
+  pergunta:"Qual é a conduta mais adequada na APS?",
+  opcoes:[
+    "Orientar apenas exercício físico e práticas integrativas, reavaliando o quadro em consulta daqui a seis meses",
+    "Encaminhar ao CAPS, pois as ideias de culpa indicam quadro psicótico que exige manejo especializado",
+    "Iniciar antidepressivo tricíclico como primeira escolha, pela maior eficácia sobre abulia e culpa",
+    "Iniciar ISRS com psicoeducação e retorno próximo, reavaliando o risco de suicídio em toda consulta"
+  ],
+  correta:3,
+  pista:"Perda de interesse com incapacidade de iniciar tarefas (sintoma fundamental) + culpa, insônia e perda de peso (acessórios) há mais de 14 dias; PHQ-9 de 19 e perda funcional (fechou a oficina). Sem mania, sem psicose, sem risco atual.",
+  conceito:"Episódio depressivo: 5 ou mais sintomas, ao menos 1 fundamental, por 14 dias ou mais. PHQ-9 acima de 15 e perda de funções indicam quadro moderado/grave: antidepressivo (ISRS ou ISRSN como 1ª escolha, com latência de efeito), psicoeducação, escuta e seguimento próximo — a maior parte na APS. Referenciar se sintomas psicóticos, catatonia, bipolaridade, refratariedade ou ideação persistente.",
+  erros:{
+    0:"São medidas de quadros leves; aqui há gravidade moderada/grave com perda funcional, e seis meses rompem o seguimento próximo.",
+    1:"Culpa é sintoma acessório da depressão; sem sintomas psicóticos ou outro critério, o manejo cabe à APS.",
+    2:"Tricíclicos são alternativa com mais efeitos adversos; a primeira escolha são ISRS ou ISRSN."
+  }
+},
+{
+  t:11,
+  tema:"Puericultura — desenvolvimento aos 3 anos",
+  caso:"Miguel, 3 anos e 3 meses, nascido a termo, sem doenças ou internações e com vacinas em dia, vem à consulta anual. Aos 2 anos e meio, o registro na Caderneta mostrava frases de três a quatro palavras e brincadeiras com o primo. Começou a frequentar a creche há três meses. A mãe relata que, há cerca de dois meses, ele “voltou a falar só palavras soltas”, deixou de chamar outras crianças para brincar e voltou a pedir fralda à noite. Peso, estatura e exame físico estão normais.",
+  pergunta:"Qual é a interpretação e a conduta mais adequadas?",
+  opcoes:[
+    "Variação individual esperada; orientar estímulo da linguagem em casa e reavaliar na consulta do próximo ano",
+    "Atraso simples de linguagem, ainda dentro da faixa de aquisição esperada para crianças de três anos",
+    "Regressão de habilidades adquiridas, sinal de maior gravidade que exige investigação imediata do contexto",
+    "Adaptação esperada à creche, que dispensa investigação enquanto o crescimento se mantiver normal"
+  ],
+  correta:2,
+  pista:"Miguel já tinha frases e brincadeira social (registro da Caderneta) e perdeu essas habilidades — não se trata de algo que ainda não apareceu.",
+  conceito:"Aos 3 anos espera-se subir escadas, formar frases completas e brincar com outras crianças. Marcos são faixas, mas a regressão de habilidades é o sinal de alerta de maior gravidade e exige investigação imediata, em qualquer idade, sem esperar desnecessariamente. Regressão de marcos também é sinal comportamental sugestivo de violência — o contexto familiar precisa ser avaliado.",
+  erros:{
+    0:"Variação individual não explica perda do que já existia; esperar um ano atrasa a intervenção precoce.",
+    1:"Não é atraso de aquisição: as habilidades estavam presentes e foram perdidas — isso é regressão, mais grave.",
+    3:"Mudança de rotina não explica perda de marcos, e crescimento normal não afasta problema no desenvolvimento."
+  }
+},
+{
+  t:12,
+  tema:"Controle social e gestão do acesso",
+  caso:"No Conselho Local de Saúde, representantes dos usuários relatam que os trabalhadores de um frigorífico (turno das 6h às 16h) não conseguem acompanhar hipertensão, diabetes e pré-natal. Há um ano, a secretaria abriu atendimento aos sábados, mas com médicos plantonistas que se revezam e atendem apenas queixas agudas. Os indicadores de acompanhamento desse grupo não melhoraram.",
+  pergunta:"Qual encaminhamento da gestão responde melhor à demanda do conselho?",
+  opcoes:[
+    "Manter o plantão de sábado, pois garantir porta aberta em horário alternativo já cumpre o princípio do acesso",
+    "Encaminhar esses trabalhadores ao serviço de saúde ocupacional do frigorífico, responsável pelo acompanhamento",
+    "Registrar a demanda e informar ao conselho que a organização de horários é decisão técnica exclusiva da gestão",
+    "Pactuar com o conselho horário estendido da mesma equipe, incluindo cuidado programado, e monitorar indicadores"
+  ],
+  correta:3,
+  pista:"O horário alternativo já existe, mas com plantonistas rotativos e só para agudos: há porta aberta sem vínculo e sem cuidado programado — e os indicadores não mudaram.",
+  conceito:"Acesso não é apenas horário: envolve acessibilidade, acesso oportuno e continuidade. Longitudinalidade exige vínculo com a mesma equipe ao longo do tempo; abrangência exige promoção, prevenção e tratamento. Conselhos de saúde são paritários e deliberativos, e a gestão deve construir as respostas com eles, fornecendo informações.",
+  erros:{
+    0:"Porta aberta sem vínculo e só para agudos não garante longitudinalidade nem cuidado programado — os indicadores mostram isso.",
+    1:"A responsabilidade sanitária pela população do território é da equipe de APS; transferi-la fragmenta o cuidado.",
+    2:"Conselhos participam da formulação e do controle das políticas; tratá-los como meramente consultivos fere o controle social."
+  }
+},
+{
+  t:13,
+  tema:"Saúde indígena — competência cultural",
+  caso:"Seu Arandu, 67 anos, indígena guarani, fala pouco português. Na UBS, aferições repetidas confirmam pressão elevada, sem sinais de gravidade. O filho, que o acompanha, diz ao médico: “Pode explicar só para mim; eu decido por ele e coloco o remédio escondido na comida”. Por meio do agente indígena de saúde, Seu Arandu diz que quer conversar com o rezador da aldeia antes de decidir se inicia o tratamento.",
+  pergunta:"Qual é a conduta mais adequada do médico de família?",
+  opcoes:[
+    "Aceitar a proposta do filho, que garante a adesão, e prescrever o anti-hipertensivo para ser dado junto à alimentação",
+    "Explicar a ele, via agente indígena, riscos e alternativas, incluir o rezador se desejar e combinar sinais de alarme",
+    "Condicionar o início de qualquer acompanhamento ao abandono das práticas tradicionais de cuidado da comunidade",
+    "Registrar recusa de tratamento no prontuário e encerrar o acompanhamento até que ele retorne com decisão tomada"
+  ],
+  correta:1,
+  pista:"Barreira de língua, filho querendo decidir e medicar às escondidas, paciente que pede para consultar o rezador e quadro sem gravidade — há tempo para decidir com segurança.",
+  conceito:"Cuidado culturalmente seguro: escuta respeitosa e comunicação na língua da pessoa; informar riscos e alternativas de modo compreensível e apoiar decisão informada; negociar um plano compartilhado com família e agentes tradicionais quando desejado; manter segurança clínica com sinais de alarme, monitoramento e acesso oportuno, sem coerção.",
+  erros:{
+    0:"Medicar às escondidas e deixar outro decidir anula a autonomia do paciente — é coerção, não adesão.",
+    2:"Exigir o abandono da cultura destrói o vínculo; o plano deve ser negociado, não imposto.",
+    3:"Ele não recusou, pediu tempo; encerrar o seguimento abandona a segurança clínica."
+  }
+},
+{
+  t:14,
+  tema:"Saúde mental — ansiedade",
+  caso:"Priscila, 31 anos, operadora de telemarketing, relata há dois meses dificuldade para iniciar o sono, preocupação constante com metas, tremor nas mãos, palpitações e medo “de estar com algo grave”. Não descreve crises súbitas. Conta que, há três meses, toma “um remédio para emagrecer” comprado sem receita e quatro latas de energético por dia para aguentar o turno. Pede “um calmante forte”.",
+  pergunta:"Qual é a conduta mais adequada neste momento?",
+  opcoes:[
+    "Investigar as substâncias em uso e descartar doenças de base com exames racionais antes de diagnosticar",
+    "Diagnosticar transtorno de ansiedade generalizada e iniciar ISRS, associando psicoterapia desde já",
+    "Diagnosticar transtorno do pânico, pelo medo de doença grave associado a palpitações e tremor nas mãos",
+    "Encaminhar ao psiquiatra, pois a presença de sintomas somáticos exclui o manejo da ansiedade na APS"
+  ],
+  correta:0,
+  pista:"O início dos sintomas coincide com o uso de remédio para emagrecer e energéticos; a evolução é de apenas dois meses e não há crises súbitas.",
+  conceito:"A ansiedade pode ser sintoma de outras patologias ou problemas. A avaliação inclui distinguir ansiedade fisiológica de patológica, buscar gatilhos, uso de medicamentos e substâncias psicoativas, comorbidades e hábitos de vida, com exames complementares de uso racional para descartar doenças de base. TAG exige 6 meses ou mais; pânico exige ataques recorrentes e inesperados.",
+  erros:{
+    1:"Fecha TAG sem os 6 meses de evolução e sem avaliar as substâncias que podem explicar os sintomas.",
+    2:"Não há ataques súbitos e recorrentes; sintomas contínuos com medo de doença não definem pânico.",
+    3:"Sintomas somáticos fazem parte da ansiedade, e a maior parte do manejo é feita na APS; não há critério de referência."
+  }
+},
+{
+  t:15,
+  tema:"Puericultura — marcos aos 6 meses",
+  caso:"Heloísa, 6 meses, nascida a termo, em aleitamento materno exclusivo, vem à consulta de puericultura. Senta com apoio, passa o chocalho de uma mão para a outra e balbucia “bá-bá”. A mãe está aflita porque o sobrinho da vizinha, “da mesma idade”, já engatinha, e Heloísa ainda não faz pinça nem fala “mamã”. Peso, comprimento e perímetro cefálico seguem o mesmo canal desde o nascimento.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Solicitar avaliação com fisioterapia e fonoaudiologia, pela ausência de engatinhar, pinça e primeiras palavras",
+    "Considerar o desenvolvimento limítrofe e antecipar o retorno em 30 dias só para reavaliar os marcos motores",
+    "Marcos adequados; orientar introdução alimentar com aleitamento, conferir vacinas e orientar a próxima fase",
+    "Suspender o aleitamento materno e iniciar fórmula, para acelerar o ganho de força necessário ao engatinhar"
+  ],
+  correta:2,
+  pista:"Todos os marcos de 6 meses estão presentes (senta com apoio, transfere objetos, balbucia); os que “faltam” são marcos de 9 meses. Crescimento estável no mesmo canal.",
+  conceito:"Marcos são faixas de aquisição: aos 6 meses, sentar com apoio, transferir objetos e balbuciar; engatinhar, pinça, estranhamento e “mama/papa” são de 9 meses. A consulta dos 6 meses integra crescimento (trajetória), desenvolvimento, transição alimentar (aleitamento exclusivo até 6 meses e complementado até 2 anos ou mais), checagem vacinal em toda consulta e orientação antecipatória.",
+  erros:{
+    0:"Engatinhar, pinça e primeiras palavras são marcos de 9 meses; exigi-los aos 6 gera encaminhamento desnecessário.",
+    1:"Não há quadro limítrofe: os marcos da idade estão presentes, e a consulta ainda perderia as demais ações dos 6 meses.",
+    3:"O aleitamento deve ser mantido junto à introdução alimentar até 2 anos ou mais; não tem relação com engatinhar."
+  }
+},
+{
+  t:16,
+  tema:"Gestão de risco em território superpopuloso",
+  caso:"Dr. Renan é médico da única equipe de Saúde da Família da comunidade do Jacarezinho Alto, com cerca de 11 mil moradores. A equipe já faz acolhimento com classificação de risco e estratificou hipertensos e diabéticos, mas, após um ano, a fila ainda se forma de madrugada, gestantes iniciam o pré-natal tardiamente e duas microáreas surgidas em novas ocupações não têm agente comunitário.",
+  pergunta:"Além da prática clínica, o que o médico deve fazer diante dessa demanda?",
+  opcoes:[
+    "Suspender a demanda espontânea e manter a agenda exclusivamente para os grupos prioritários já estratificados",
+    "Levar os dados à gestão e ao conselho local, defendendo revisão do território e novas equipes",
+    "Limitar o atendimento aos moradores das microáreas cadastradas até que a população se ajuste ao tamanho da equipe",
+    "Distribuir número fixo de fichas por ordem de chegada, garantindo igualdade de oportunidade entre os moradores"
+  ],
+  correta:1,
+  pista:"A estratificação de risco já foi feita e não basta: há desproporção estrutural entre população e equipe, microáreas descobertas e indicadores ruins (pré-natal tardio).",
+  conceito:"O território é dinâmico: limites e população devem ser ajustados à capacidade operacional. O MFC tem responsabilidade pela saúde da comunidade e assume papel de advocacia pelo paciente, levando o problema às instâncias de gestão e de controle social. Equidade exige priorizar por necessidade, não por ordem de chegada.",
+  erros:{
+    0:"Fechar a demanda espontânea viola o acolhimento de toda demanda e o acesso de primeiro contato.",
+    2:"Excluir quem não está cadastrado fere a universalidade; é o território que deve ser revisto, não a população negada.",
+    3:"Ordem de chegada trata igualmente os desiguais; equidade exige priorizar por risco e necessidade."
+  }
+},
+{
+  t:17,
+  tema:"Atributos da APS — acesso de primeiro contato",
+  caso:"A UBS Jardim Europa funciona das 7h às 19h, mas só marca consultas por aplicativo, liberado às segundas-feiras às 7h, para a semana seguinte. Levantamento da equipe mostra que idosos e pessoas com baixa escolaridade quase não conseguem vagas e que moradores com febre, dor ou lesões recentes procuram diretamente o pronto-socorro. O secretário propõe estender o funcionamento até as 22h.",
+  pergunta:"Qual mudança fortalece de forma mais efetiva o acesso de primeiro contato?",
+  opcoes:[
+    "Acolher presencialmente e por outros canais, com escuta e avaliação da necessidade e resposta oportuna",
+    "Estender o funcionamento até as 22h, mantendo a marcação exclusiva por aplicativo para organizar a agenda",
+    "Ampliar o número de vagas no aplicativo, reduzindo filas presenciais e padronizando o acesso da população",
+    "Pactuar com o pronto-socorro o atendimento das queixas agudas e reservar a UBS para o cuidado programado"
+  ],
+  correta:0,
+  pista:"O horário já é amplo; a barreira é administrativa e tecnológica (aplicativo, vaga só na semana seguinte) e exclui justamente os mais vulneráveis, empurrando as queixas novas para o pronto-socorro.",
+  conceito:"A APS é a entrada no sistema para todas as novas necessidades e problemas. Acesso não é apenas horário: inclui acessibilidade (barreiras físicas, culturais e administrativas), acesso oportuno (resposta compatível com a necessidade, sem reduzir tudo a agendamento) e acolhimento com escuta qualificada.",
+  erros:{
+    1:"Mais horas não removem a barreira administrativa e tecnológica que exclui quem mais precisa.",
+    2:"Mantém o agendamento como única via e não responde às necessidades agudas no tempo oportuno.",
+    3:"Desloca o primeiro contato para a urgência; a APS deve acolher necessidades agudas e programadas."
+  }
+},
+{
+  t:18,
+  tema:"Política Nacional de Saúde Mental e RAPS",
+  caso:"Luciano, 34 anos, com esquizofrenia, interrompeu a medicação há dois meses. Está mais isolado, com discurso por vezes desorganizado, mas sem agressividade, sem risco para si ou para terceiros e aceitando conversar com a equipe. A mãe, idosa e exausta, pede à médica de família “uma internação longa num hospital psiquiátrico, para ele ficar protegido”. O município conta com CAPS e leitos de saúde mental em hospital geral.",
+  pergunta:"Qual é a conduta mais coerente com a Política Nacional de Saúde Mental?",
+  opcoes:[
+    "Solicitar internação prolongada em hospital psiquiátrico, garantindo proteção ao paciente e alívio à família",
+    "Manter o acompanhamento exclusivamente na UBS, evitando envolver outros serviços que possam estigmatizá-lo",
+    "Internar em leito de hospital geral até a remissão completa, como forma de assegurar a adesão ao tratamento",
+    "Articular cuidado intensivo no CAPS com a APS e a família, reservando internação à indicação clínica"
+  ],
+  correta:3,
+  pista:"Descompensação por abandono do tratamento, sem risco e com aceitação do contato; família sobrecarregada; rede com CAPS e leitos em hospital geral disponíveis.",
+  conceito:"A Lei 10.216 redireciona o modelo para o cuidado comunitário e territorial, em liberdade, substituindo a lógica asilar. A RAPS articula pontos conforme a necessidade: APS como porta de entrada e vínculo, CAPS para cuidado intensivo e leitos hospitalares quando necessário — sempre com o menor grau de restrição possível e foco na reinserção social.",
+  erros:{
+    0:"Reproduz a lógica asilar que a reforma substituiu; internação prolongada sem indicação clínica fere direitos e o cuidado em liberdade.",
+    1:"A APS coordena, mas o quadro pede cuidado mais intensivo; a RAPS integra pontos conforme a necessidade.",
+    2:"Leito em hospital geral é para indicação clínica e pelo menor tempo necessário, não instrumento para garantir adesão."
+  }
+},
+{
+  t:19,
+  tema:"Antropometria infantil — escore-Z",
+  caso:"Arthur, 4 anos, vive com a mãe e três irmãos em uma casa de um cômodo; a família relata que “no fim do mês falta comida”. Tem histórico de diarreias e pneumonias repetidas. Na consulta: estatura/idade com escore-Z de −2,7; peso/estatura com escore-Z de −0,6; IMC/idade com escore-Z de −0,4. A Caderneta mostra a estatura afastando-se progressivamente da mediana desde os 18 meses.",
+  pergunta:"Qual é a interpretação e a conduta mais adequadas?",
+  opcoes:[
+    "Magreza por déficit agudo de peso; orientar dieta hipercalórica e reavaliar somente o peso da criança em 15 dias",
+    "Crescimento adequado, já que peso/estatura e IMC/idade estão dentro da faixa de normalidade para a idade",
+    "Baixa estatura por déficit linear crônico; investigar causas, seguir de perto e acionar a assistência social",
+    "Baixo peso para a idade, com indicação de investigação neurológica prioritária pelo desvio encontrado na curva"
+  ],
+  correta:2,
+  pista:"Só a estatura/idade está abaixo de −2 DP; os índices de proporção são normais. A trajetória mostra afastamento progressivo, em contexto de insegurança alimentar e infecções recorrentes.",
+  conceito:"O significado do −2 DP depende do índice: estatura/idade indica baixa estatura; peso/estatura ou IMC/idade, magreza; peso/idade, baixo peso; perímetro cefálico/idade, microcefalia (investigação neurológica). A estatura reflete agravos crônicos, e a trajetória vale mais que um ponto isolado. Conduta: investigação etiológica, suporte nutricional, acompanhamento mais frequente e articulação com a assistência social.",
+  erros:{
+    0:"Magreza exige peso/estatura ou IMC/idade abaixo de −2, que estão normais; o déficit é linear e crônico, não agudo.",
+    1:"Índices de proporção normais não anulam a baixa estatura; cada índice tem significado próprio.",
+    3:"O índice alterado é estatura/idade, não peso/idade; investigação neurológica é indicada por alteração do perímetro cefálico."
+  }
+}
+];
+
+const GEN2 = `
+<svg viewBox="0 0 650 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Genograma de duas gerações da família de Sandra, com legenda">
+  <polyline class="g-rel" points="124,150 131,144 138,156 145,144 152,156 159,144 166,156 173,144 180,156 187,144 194,156 201,144 211,150"/>
+  <line class="g-rel" x1="249" y1="146" x2="336" y2="146"/>
+  <line class="g-rel" x1="249" y1="150" x2="336" y2="150"/>
+  <line class="g-rel" x1="249" y1="154" x2="336" y2="154"/>
+  <line class="g-line" x1="184" y1="64" x2="276" y2="64"/>
+  <line class="g-line" x1="230" y1="64" x2="230" y2="131"/>
+  <line class="g-line" x1="110" y1="108" x2="350" y2="108"/>
+  <line class="g-line" x1="110" y1="108" x2="110" y2="136"/>
+  <line class="g-line" x1="350" y1="108" x2="350" y2="136"/>
+  <rect class="g-sym" x="156" y="50" width="28" height="28"/>
+  <text class="g-txt" x="170" y="24" text-anchor="middle">Osvaldo</text>
+  <text class="g-sub" x="170" y="38" text-anchor="middle">falecido</text>
+  <circle class="g-sym" cx="290" cy="64" r="14"/>
+  <text class="g-txt" x="290" y="24" text-anchor="middle">Lurdes, 81</text>
+  <text class="g-sub" x="290" y="38" text-anchor="middle">demência</text>
+  <rect class="g-sym" x="96" y="136" width="28" height="28"/>
+  <text class="g-txt" x="110" y="190" text-anchor="middle">Marcos, 49</text>
+  <text class="g-sub" x="110" y="204" text-anchor="middle">mesma cidade</text>
+  <circle class="g-idx" cx="230" cy="150" r="18.5"/>
+  <circle class="g-sym" cx="230" cy="150" r="14"/>
+  <text class="g-txt" x="230" y="190" text-anchor="middle">Sandra, 53</text>
+  <text class="g-sub" x="230" y="204" text-anchor="middle">pessoa atendida</text>
+  <circle class="g-sym" cx="350" cy="150" r="14"/>
+  <text class="g-txt" x="350" y="190" text-anchor="middle">Regina, 46</text>
+  <text class="g-sub" x="350" y="204" text-anchor="middle">bairro vizinho</text>
+  ${LEGENDA}
+</svg>`;
+
+const GEN3 = `
+<svg viewBox="0 0 650 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Genograma de três gerações da família de Juliana, com legenda">
+  <line class="g-rel" x1="282" y1="77" x2="242" y2="137" stroke-dasharray="5 4"/>
+  <polyline class="g-rel" points="256,138 263,133 270,143 277,133 284,143 291,133 298,143 305,133 312,143 319,133 326,143 333,133 340,143 347,133 354,143 364,138"/>
+  <line class="g-line" x1="184" y1="64" x2="276" y2="64"/>
+  <line class="g-line" x1="230" y1="64" x2="230" y2="131"/>
+  <line class="g-line" x1="249" y1="150" x2="366" y2="150"/>
+  <line class="g-line" x1="307" y1="150" x2="307" y2="221"/>
+  <rect class="g-sym" x="156" y="50" width="28" height="28"/>
+  <text class="g-txt" x="170" y="24" text-anchor="middle">Antônio, 61</text>
+  <text class="g-sub" x="170" y="38" text-anchor="middle">outro estado</text>
+  <circle class="g-sym" cx="290" cy="64" r="14"/>
+  <text class="g-txt" x="290" y="24" text-anchor="middle">Rosa, 58</text>
+  <text class="g-sub" x="290" y="38" text-anchor="middle">outro estado</text>
+  <circle class="g-idx" cx="230" cy="150" r="18.5"/>
+  <circle class="g-sym" cx="230" cy="150" r="14"/>
+  <text class="g-txt" x="202" y="147" text-anchor="end">Juliana, 27</text>
+  <text class="g-sub" x="202" y="161" text-anchor="end">pessoa atendida</text>
+  <rect class="g-sym" x="366" y="136" width="28" height="28"/>
+  <text class="g-txt" x="404" y="147">Diego, 30</text>
+  <circle class="g-sym" cx="307" cy="235" r="14"/>
+  <text class="g-txt" x="307" y="268" text-anchor="middle">Lara, 5 semanas</text>
+  ${LEGENDA}
+</svg>`;
+
+const NEW_A = [
+/* ============ TEMA 1 — GENOGRAMA ============ */
+{ t:1,
+  tema:"Abordagem familiar — genograma",
+  caso:"Sandra, 53 anos, diarista, procura a UBS por insônia, dor no corpo e cansaço há três meses. Há um ano a mãe, Dona Lurdes, com demência, passou a morar com ela, e Sandra deixou duas das quatro casas em que fazia faxina para cuidar dela. O médico de família atualiza o genograma com Sandra, usando a legenda padronizada da unidade. Sandra conta que o irmão, Marcos, “só aparece para criticar”.",
+  figura:GEN2,
+  legenda:"Genograma registrado no prontuário na consulta atual.",
+  pergunta:"Qual leitura do genograma orienta melhor a abordagem desta consulta?",
+  opcoes:[
+    "Concluir que Marcos deve assumir o cuidado da mãe, já que o conflito com Sandra indica omissão da parte dele",
+    "Reconhecer o cuidado concentrado em Sandra e explorar com ela a irmã, de vínculo próximo, como apoio possível",
+    "Usar as linhas do genograma para listar os serviços e grupos do bairro que podem apoiar o cuidado de Dona Lurdes",
+    "Registrar o conflito com Marcos como ruptura definitiva e excluí-lo de qualquer conversa sobre o cuidado da mãe"
+  ],
+  correta:1,
+  pista:"Sintomas inespecíficos em uma cuidadora única; o genograma mostra conflito com o irmão e relação muito próxima com a irmã, que mora no bairro vizinho.",
+  conceito:"O genograma mostra composição, vínculos e padrões relacionais, ajudando a identificar quem cuida, quem apoia e com quem é difícil contar. Ele gera hipóteses a explorar com a pessoa — não conclusões — e não substitui a escuta. Recursos da comunidade são representados no ecomapa.",
+  erros:{
+    0:"Transforma um traço relacional em julgamento moral sobre alguém que não foi ouvido; o genograma levanta hipóteses, não veredictos.",
+    2:"Mapear serviços e grupos comunitários é função do ecomapa, não do genograma.",
+    3:"Conflito não é ruptura; excluir o irmão fecha uma possibilidade de rede que ainda precisa ser explorada na escuta."
+  }
+},
+{ t:1,
+  tema:"Abordagem familiar — genograma",
+  caso:"Juliana, 27 anos, traz a filha Lara, de 5 semanas, para a primeira consulta de puericultura. Mudou-se para a cidade há um ano por causa do trabalho do marido e diz que “ninguém ajuda”. Ao construir o genograma da família com a legenda padronizada da unidade, a médica de família registra o que Juliana relata: fala pouco com a mãe e o marido “perde a paciência e grita comigo quando a bebê chora”.",
+  figura:GEN3,
+  legenda:"Genograma construído durante a consulta de puericultura.",
+  pergunta:"Qual interpretação integrada do caso e do genograma orienta a melhor conduta?",
+  opcoes:[
+    "O genograma registra apenas a estrutura da família e não acrescenta informação útil para avaliar a saúde de Juliana",
+    "A linha de conflito confirma violência doméstica e dispensa qualquer investigação adicional com a própria Juliana",
+    "Como a consulta é da bebê, registrar os achados e abordar a saúde de Juliana só se ela trouxer queixas próprias",
+    "Puerpério, apoio frágil e conflito conjugal justificam rastrear depressão e explorar a sós a situação em casa"
+  ],
+  correta:3,
+  pista:"Puérpera recém-mudada, mãe distante (linha tracejada), conflito com o marido (ziguezague) e relato de gritos — tudo surgindo na consulta de puericultura.",
+  conceito:"O genograma revela vínculos e lacunas de suporte que se somam ao contexto clínico. Mudanças hormonais (gestação, puerpério), baixo suporte psicossocial e violência doméstica são fatores de risco para depressão; rastrear (PHQ-2) e avaliar exposição à violência faz parte do cuidado integral da família.",
+  erros:{
+    0:"O genograma registra também relações e padrões relacionais — aqui, justamente os que indicam baixo suporte.",
+    1:"O traço aponta conflito, uma hipótese; a situação precisa ser investigada na escuta com Juliana, não presumida.",
+    2:"A consulta da criança é oportunidade de cuidar da família; esperar queixa espontânea perde fatores de risco evidentes."
+  }
+},
+
+/* ============ TEMA 2 — PNAB ============ */
+{ t:2,
+  tema:"PNAB e organização da atenção básica",
+  caso:"Seu Valdir, 64 anos, está hospedado há duas semanas na casa da filha, no território da UBS Santa Luzia, enquanto se recupera de uma cirurgia. Chega com febre e dor ao urinar há dois dias. A recepcionista informa que ele “não é da área” e deve voltar à UBS de seu bairro, a 30 km dali. Ele não tem transporte e está visivelmente abatido.",
+  pergunta:"Qual conduta está mais alinhada à Política Nacional de Atenção Básica?",
+  opcoes:[
+    "Orientar o retorno à UBS de origem, pois a equipe responde apenas pela população adscrita ao seu território",
+    "Encaminhar diretamente ao pronto-socorro, já que a UBS não deve atender pessoas cadastradas em outro serviço",
+    "Acolher, avaliar e tratar a demanda aguda e comunicar o atendimento à equipe de referência de Seu Valdir",
+    "Registrar a demanda e agendar atendimento após a transferência formal do cadastro para o território da filha"
+  ],
+  correta:2,
+  pista:"Demanda aguda, pessoa fragilizada e sem transporte; a única barreira apontada é administrativa (cadastro em outra área).",
+  conceito:"A PNAB organiza o cuidado por território e responsabilidade sanitária, mas sob o imperativo ético de que toda demanda, necessidade ou sofrimento deve ser acolhido, observando risco e vulnerabilidade. Adscrição organiza o acompanhamento; não é motivo para recusar necessidade aguda. Coordenar com a equipe de referência preserva a continuidade.",
+  erros:{
+    0:"Adscrição organiza o acompanhamento, mas não autoriza deixar de acolher uma necessidade aguda.",
+    1:"Desloca para a urgência um problema resolvível na APS, contrariando seu papel de primeiro contato.",
+    3:"Condiciona o cuidado a burocracia, adiando o tratamento de um quadro agudo em pessoa fragilizada."
+  }
+},
+{ t:2,
+  tema:"PNAB e organização da atenção básica",
+  caso:"Na UBS Novo Horizonte, a agenda, as prioridades e as ações coletivas são definidas somente pela coordenação e comunicadas por mensagem. As agentes comunitárias relatam, sem espaço de discussão, que muitas gestantes da ocupação recente não fazem pré-natal. A equipe não se reúne há meses e cada profissional atende de forma isolada.",
+  pergunta:"Qual mudança está mais alinhada à forma de trabalho prevista para a atenção básica?",
+  opcoes:[
+    "Instituir reuniões de equipe para planejar de forma participativa, com as informações do território",
+    "Manter a definição centralizada das prioridades, que garante padronização e agilidade nas decisões da unidade",
+    "Delegar às agentes comunitárias a condução exclusiva das gestantes identificadas, sem envolver outros profissionais",
+    "Aguardar que as gestantes procurem a unidade espontaneamente, preservando a autonomia de cada uma delas"
+  ],
+  correta:0,
+  pista:"Decisões verticalizadas, profissionais isolados e informação relevante do território (gestantes sem pré-natal) que não chega ao planejamento.",
+  conceito:"A atenção básica é desenvolvida por práticas de cuidado e gestão democráticas e participativas, sob a forma de trabalho em equipe, dirigidas a territórios definidos com responsabilidade sanitária. O planejamento deve usar dados atuais e o conhecimento que a equipe tem do território.",
+  erros:{
+    1:"Contraria o trabalho em equipe e a gestão participativa; decisões isoladas ignoram o que o território mostra.",
+    2:"Transfere responsabilidade sem cuidado compartilhado; o acompanhamento de gestantes é trabalho da equipe.",
+    3:"Espera passiva não cumpre a responsabilidade sanitária sobre a população, justamente a mais vulnerável."
+  }
+},
+{ t:2,
+  tema:"PNAB e organização da atenção básica",
+  caso:"Um novo gestor propõe que a UBS passe a fazer “apenas prevenção”: vacinas, grupos educativos e rastreamentos. Pessoas com doenças crônicas em tratamento, reabilitação após AVC, usuários de álcool em redução de danos e pacientes em cuidados paliativos seriam transferidos para ambulatórios de especialidades e para o hospital.",
+  pergunta:"Qual análise sobre a proposta é mais adequada?",
+  opcoes:[
+    "É adequada, pois o papel da atenção básica é essencialmente preventivo, cabendo o tratamento aos demais níveis",
+    "É adequada em parte, desde que doenças crônicas permaneçam na UBS e as demais condições sejam transferidas",
+    "É inadequada apenas pelo custo, já que transferir pacientes aumenta a despesa com transporte sanitário",
+    "É inadequada: a atenção básica inclui prevenção, tratamento, reabilitação, redução de danos e paliação"
+  ],
+  correta:3,
+  pista:"A proposta retira da UBS tratamento, reabilitação, redução de danos e cuidados paliativos, deixando só ações preventivas.",
+  conceito:"A atenção básica é um conjunto de ações individuais e coletivas que abrange promoção e proteção, prevenção de agravos, diagnóstico, tratamento, reabilitação, redução de danos e manutenção da saúde, buscando atenção integral. Integralidade inclui cuidados paliativos.",
+  erros:{
+    0:"Reduz a APS à prevenção, contrariando a definição de atenção integral que inclui diagnóstico e tratamento.",
+    1:"Mantém só parte do escopo; reabilitação, redução de danos e paliação também integram a atenção básica.",
+    2:"O problema é conceitual e de cuidado (integralidade, vínculo), não apenas financeiro."
+  }
+},
+
+/* ============ TEMA 3 — TERRITÓRIO VULNERÁVEL ============ */
+{ t:3,
+  tema:"Território de alta vulnerabilidade",
+  caso:"Na reunião de equipe, uma agente comunitária relata medo de visitar uma casa ligada ao tráfico, onde vivem uma idosa acamada e duas crianças com vacinas atrasadas. Alguém sugere registrar no prontuário “família de risco — não agendar visitas” e aguardar que procurem a unidade.",
+  pergunta:"Qual é a conduta mais adequada da equipe?",
+  opcoes:[
+    "Registrar a família como de risco e suspender as visitas, preservando a segurança dos profissionais da equipe",
+    "Planejar visitas com estratégias seguras, sem rótulos, intensificando o cuidado da idosa e das crianças",
+    "Transferir o acompanhamento da família para o Conselho Tutelar, responsável por crianças em situação de risco",
+    "Visitar a casa imediatamente com toda a equipe, desconsiderando o receio relatado pela agente comunitária"
+  ],
+  correta:1,
+  pista:"Pessoas com alta necessidade (idosa acamada, crianças sem vacina) e uma proposta de rótulo que se converteria em barreira ao cuidado.",
+  conceito:"Vulnerabilidade orienta a oferta e o apoio; não deve virar barreira ou estigma. Maior necessidade pode exigir maior intensidade de acompanhamento (proporcionalidade). A equipe deve conhecer o território vivo — circulação, horários, lideranças — para planejar ações factíveis e seguras.",
+  erros:{
+    0:"Converte vulnerabilidade em rótulo e exclusão, deixando sem cuidado justamente quem mais precisa.",
+    2:"Não há indicação de violência contra as crianças; atraso vacinal pede busca ativa pela equipe, não transferência.",
+    3:"Ignora a segurança da equipe; o planejamento precisa ser factível, considerando as barreiras do território."
+  }
+},
+{ t:3,
+  tema:"Território de alta vulnerabilidade",
+  caso:"A família de Heitor, 2 anos, tem renda estável e casa própria em rua pavimentada. A mãe está em tratamento para depressão grave, o pai faz uso diário de álcool e há relatos de brigas frequentes. Heitor faltou às duas últimas consultas de puericultura. Um membro da equipe afirma que a família “não é vulnerável, porque não é pobre”.",
+  pergunta:"Qual análise orienta a conduta mais adequada?",
+  opcoes:[
+    "Há vulnerabilidade familiar; intensificar o seguimento de Heitor e articular a rede de apoio da família",
+    "A família não é vulnerável, pois renda e moradia adequadas garantem o cuidado necessário à criança",
+    "Trata-se apenas de faltas; basta reagendar as consultas e aguardar o comparecimento espontâneo da família",
+    "A situação é exclusivamente de saúde mental dos adultos e deve ser conduzida somente pelo CAPS da região"
+  ],
+  correta:0,
+  pista:"Sem pobreza, mas com saúde mental dos cuidadores comprometida, uso de álcool, instabilidade familiar e falha de acompanhamento da criança.",
+  conceito:"Vulnerabilidade não é sinônimo de pobreza: resulta da combinação de fatores biológicos, sociais, familiares (instabilidade, saúde mental dos cuidadores, uso de substâncias, violência) e ambientais. Identificá-la é parte do diagnóstico clínico e pede acompanhamento mais frequente e articulação da rede.",
+  erros:{
+    1:"Reduz vulnerabilidade à renda e ignora os fatores familiares que aumentam o risco para a criança.",
+    2:"Faltas em contexto de risco pedem busca ativa e abordagem familiar, não espera passiva.",
+    3:"Os adultos podem precisar de outros pontos da rede, mas a APS segue responsável pela criança e pela família."
+  }
+},
+{ t:3,
+  tema:"Território de alta vulnerabilidade",
+  caso:"A equipe da UBS Vale Verde dispõe de 20 horários semanais de visita domiciliar. A microárea 1 é um condomínio com famílias de renda média e boa cobertura vacinal; a microárea 2 é uma ocupação recente, com gestantes sem pré-natal, idosos acamados e crianças desnutridas. A coordenação propõe dividir os horários igualmente entre as duas.",
+  pergunta:"Qual distribuição está mais alinhada aos princípios do SUS?",
+  opcoes:[
+    "Dividir igualmente os horários, garantindo que ambas as microáreas recebam exatamente o mesmo cuidado",
+    "Priorizar a microárea 1, onde as famílias costumam aderir melhor às orientações e às consultas agendadas",
+    "Concentrar mais visitas na microárea 2, conforme a necessidade, sem deixar de acompanhar a microárea 1",
+    "Suspender as visitas da microárea 1 e destinar todos os horários à ocupação até que a situação se normalize"
+  ],
+  correta:2,
+  pista:"Recurso limitado e duas populações com necessidades muito diferentes; a proposta é tratar igualmente os desiguais.",
+  conceito:"Equidade: tratar desigualmente os desiguais, oferecendo mais a quem mais precisa. Universalidade: todos seguem com direito ao cuidado. Proporcionalidade: maior necessidade exige maior intensidade de acompanhamento.",
+  erros:{
+    0:"Igualdade de oferta com necessidades desiguais mantém a iniquidade; é o oposto de equidade.",
+    1:"Inverte a lógica: prioriza quem menos precisa com base em conveniência de adesão.",
+    3:"Abandonar uma microárea fere a universalidade; equidade é proporcionalidade, não exclusão."
+  }
+},
+
+/* ============ TEMA 4 — DEPRESSÃO: REAVALIAÇÃO ============ */
+{ t:4,
+  tema:"Saúde mental — depressão",
+  caso:"Cláudia, 45 anos, com episódio depressivo moderado, usou fluoxetina em dose otimizada por 10 semanas, com boa adesão, sem resposta. Foi trocada para sertralina, também otimizada, e após mais 9 semanas mantém PHQ-9 de 18, sem sintomas psicóticos, sem história de mania e sem ideação suicida.",
+  pergunta:"Qual é a conduta mais adequada nesta reavaliação?",
+  opcoes:[
+    "Manter a sertralina por mais três meses, já que a latência pode ser longa em quadros moderados",
+    "Associar um benzodiazepínico ao esquema atual e reavaliar a resposta em nova consulta de rotina",
+    "Suspender a farmacoterapia e manter apenas psicoeducação e atividade física, com retorno mensal",
+    "Referenciar para avaliação especializada, mantendo o seguimento e a coordenação na APS"
+  ],
+  correta:3,
+  pista:"Duas estratégias farmacológicas adequadas, cada uma por mais de 8 semanas, com boa adesão e sem resposta.",
+  conceito:"Caso refratário — duas estratégias farmacológicas por mais de 8 semanas — é critério para referenciar. A APS mantém vínculo, seguimento e coordenação do cuidado, avaliando risco de suicídio em toda consulta.",
+  erros:{
+    0:"A latência já foi respeitada em duas tentativas; prolongar sem mudar a estratégia atrasa o cuidado adequado.",
+    1:"Não responde à refratariedade e não está entre as estratégias de primeira escolha do tratamento.",
+    2:"Quadro moderado sem resposta pede mais cuidado, não menos; retirar o tratamento ignora a gravidade."
+  }
+},
+{ t:4,
+  tema:"Saúde mental — depressão",
+  caso:"Anderson, 33 anos, retorna três semanas após iniciar sertralina por episódio depressivo moderado. Diz que “nada mudou” e pede para trocar o remédio. Questionado diretamente, conta que às vezes sente que “a vida não vale a pena”, mas nega plano, intenção ou tentativas prévias; fala dos filhos como motivo para seguir. Mora com a esposa, que o acompanha e o apoia.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Manter a sertralina, explicar a latência, combinar sinais de alerta com o casal e antecipar o retorno",
+    "Encaminhar com urgência ao serviço de emergência, pela presença de pensamentos de morte",
+    "Trocar o antidepressivo, já que a ausência de melhora em três semanas caracteriza falha terapêutica",
+    "Referenciar ao CAPS, pois qualquer ideação suicida exige acompanhamento em serviço especializado"
+  ],
+  correta:0,
+  pista:"Três semanas de tratamento (dentro da latência); ideação passiva sem plano, intenção ou tentativa, com fatores protetores e apoio familiar.",
+  conceito:"A avaliação de risco de suicídio investiga ideação, plano, meios e intenção para classificar o risco e definir a conduta. Sem alto risco, o manejo segue na APS com seguimento próximo e rede de apoio. Antidepressivos têm latência para efeito; referenciar se ideação persistente após manejo inicial ou alto risco (urgência).",
+  erros:{
+    1:"Urgência é para alto risco; aqui não há plano, intenção nem tentativa, e há fatores protetores.",
+    2:"Três semanas estão dentro da latência esperada; trocar agora não permite avaliar a resposta.",
+    3:"Ideação persistente após o manejo inicial é critério de referência, não qualquer pensamento passivo no início."
+  }
+},
+{ t:4,
+  tema:"Saúde mental — depressão",
+  caso:"Patrícia, 29 anos, iniciou escitalopram por episódio depressivo moderado. Na reavaliação com 7 semanas, relata piora da tristeza e do sono nos últimos dias. Ao ser perguntada sobre o uso da medicação, conta que parou por conta própria há duas semanas por causa de náuseas e redução do desejo sexual, e que ficou com vergonha de contar. Nega ideação suicida.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Classificar o caso como refratário ao tratamento e referenciar para avaliação psiquiátrica especializada",
+    "Reintroduzir o escitalopram em dose maior, para recuperar rapidamente a resposta que havia sido obtida",
+    "Abordar os efeitos adversos e as preocupações da paciente e decidir com ela o ajuste do plano terapêutico",
+    "Suspender definitivamente os antidepressivos e manter apenas psicoterapia, respeitando a queixa da paciente"
+  ],
+  correta:2,
+  pista:"A piora coincide com a suspensão por conta própria motivada por efeitos adversos; não houve tentativa terapêutica adequada.",
+  conceito:"A reavaliação monitora resposta, efeitos adversos, adesão, funcionalidade e segurança. A decisão sobre medicação é individualizada, considerando sintomas, riscos e preferências. O tratamento é centrado na pessoa, com escuta e plano compartilhado.",
+  erros:{
+    0:"Não há refratariedade: o tratamento foi interrompido; o problema é adesão e tolerância.",
+    1:"Aumentar a dose sem discutir os efeitos adversos repete o motivo do abandono.",
+    3:"Em quadro moderado, retirar o antidepressivo sem decisão compartilhada deixa o episódio subtratado."
+  }
+},
+
+/* ============ TEMA 5 — EQUIPE ============ */
+{ t:5,
+  tema:"Estrutura da equipe de Saúde da Família",
+  caso:"Na equipe da UBS Jardim Aurora, o médico faz pessoalmente todas as visitas domiciliares, a enfermeira fica restrita a curativos e vacinas e as agentes comunitárias apenas entregam avisos de consulta. Levantamento mostra 40 crianças com puericultura e vacinas atrasadas que nunca foram identificadas nas visitas.",
+  pergunta:"Qual reorganização é mais adequada?",
+  opcoes:[
+    "Contratar mais um médico para ampliar o número de visitas domiciliares e reduzir o atraso das crianças",
+    "Redistribuir o trabalho por atribuições, com as agentes fazendo busca ativa dos faltosos em suas microáreas",
+    "Concentrar a vigilância das crianças na enfermeira, que passaria a realizar todas as visitas domiciliares",
+    "Manter a divisão atual e realizar uma campanha de vacinação em massa aos sábados para as crianças atrasadas"
+  ],
+  correta:1,
+  pista:"Profissionais atuando fora de suas atribuições e agentes comunitárias subutilizadas, com crianças faltosas não identificadas.",
+  conceito:"A organização do processo de trabalho deve considerar as atribuições de cada profissional, a cobertura e as necessidades locais. As agentes comunitárias têm papel fundamental na identificação de crianças faltosas e na busca ativa no território, a partir da distribuição por microáreas.",
+  erros:{
+    0:"Aumenta a oferta médica sem corrigir a distribuição de atribuições que gerou o problema.",
+    2:"Troca uma centralização por outra e mantém as agentes fora da vigilância do território.",
+    3:"Ação pontual que não cria vigilância contínua nem corrige o processo de trabalho da equipe."
+  }
+},
+{ t:5,
+  tema:"Estrutura da equipe de Saúde da Família",
+  caso:"Para “economizar”, um município propõe que o médico de uma equipe de Saúde da Família atenda apenas duas manhãs por semana, com os demais turnos cobertos por médicos diferentes a cada dia, contratados por plantão. A proposta não confere os parâmetros normativos da modalidade de equipe. Usuários reclamam que “cada vez é um médico” e que precisam recontar a história a cada consulta.",
+  pergunta:"Qual análise sobre a proposta é mais adequada?",
+  opcoes:[
+    "Compromete vínculo e longitudinalidade; a jornada deve seguir os parâmetros vigentes da modalidade",
+    "É adequada, pois a longitudinalidade é garantida pelo prontuário, independentemente de quem atende",
+    "É adequada, desde que os plantonistas sejam especialistas focais com maior experiência clínica",
+    "Compromete apenas a produtividade, que pode ser recuperada aumentando o número de consultas por turno"
+  ],
+  correta:0,
+  pista:"Rotatividade de médicos, perda do vínculo relatada pelos usuários e jornada definida sem conferir os parâmetros da modalidade.",
+  conceito:"Longitudinalidade é a relação continuada ao longo do tempo, com vínculo e conhecimento da história da pessoa; a relação médico-pessoa é princípio da MFC. Composição e jornada seguem parâmetros normativos que variam por modalidade e por atualizações vigentes.",
+  erros:{
+    1:"O registro apoia a continuidade, mas não substitui o vínculo e o conhecimento acumulado pela mesma equipe.",
+    2:"Troca a lógica de cuidado continuado e abrangente pela fragmentação em atendimentos focais pontuais.",
+    3:"O problema principal é a perda de vínculo e continuidade, não o número de consultas."
+  }
+},
+
+/* ============ TEMA 6 — SITUAÇÃO DE RUA ============ */
+{ t:6,
+  tema:"População em situação de rua",
+  caso:"Rosimeire, 44 anos, vive há seis anos numa praça do centro. Após consulta por tosse há quatro semanas e emagrecimento, foi orientada a voltar à UBS na segunda-feira às 7h para coletar exames. Não compareceu. A equipe do Consultório na Rua a localiza na mesma praça; ela diz que dorme em lugares diferentes e “não tem relógio nem como chegar cedo”.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Registrar abandono do seguimento e orientar que procure a unidade quando estiver disposta a fazer os exames",
+    "Solicitar à assistência social que conduza Rosimeire compulsoriamente à unidade na próxima segunda-feira",
+    "Encaminhar ao hospital de referência, onde a investigação pode ser concluída em internação programada",
+    "Levar a investigação até ela pelo Consultório na Rua, com coleta no local e fluxo flexível de seguimento"
+  ],
+  correta:3,
+  pista:"Suspeita clínica relevante e uma barreira criada pelo próprio fluxo (horário fixo, deslocamento) — não por desinteresse da paciente.",
+  conceito:"Equidade exige oferecer mais a quem mais precisa e adaptar a oferta às barreiras reais. O Consultório na Rua integra a APS e leva o cuidado ao local onde a pessoa está. Acesso não é apenas horário: envolve barreiras físicas, culturais e administrativas.",
+  erros:{
+    0:"Chama de abandono uma barreira de acesso produzida pelo serviço e deixa sem investigação um quadro relevante.",
+    1:"Coerção fere a autonomia e o vínculo; a resposta é adaptar o cuidado, não forçar a pessoa.",
+    2:"A investigação inicial está no escopo da APS; internar para superar barreira de acesso não é indicação clínica."
+  }
+},
+{ t:6,
+  tema:"População em situação de rua",
+  caso:"Jair, 57 anos, vive nas ruas há 15 anos e faz uso diário de álcool. Chega à UBS com manchas claras e dormentes nos braços há meses. Um profissional sugere iniciar a investigação “só depois que ele parar de beber, porque senão não vai aderir”. Jair diz que não pretende parar agora, mas quer cuidar das manchas.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Condicionar a investigação à abstinência, encaminhando Jair antes para tratamento do uso de álcool",
+    "Encaminhar para internação em comunidade terapêutica, como primeira etapa do cuidado integral",
+    "Investigar as manchas agora, em abordagem de redução de danos, sem culpabilizar o uso de álcool",
+    "Orientar que Jair procure a unidade quando se sentir pronto para aderir ao tratamento completo"
+  ],
+  correta:2,
+  pista:"Suspeita clínica relevante e desejo explícito de cuidado, contra uma proposta de condicionar o acesso à abstinência.",
+  conceito:"A atenção básica inclui redução de danos, e o cuidado a hábitos deve ser feito sem culpabilização. Universalidade e equidade garantem acesso independentemente da condição; vulnerabilidade orienta a oferta e não pode virar barreira.",
+  erros:{
+    0:"Condicionar o acesso à abstinência cria barreira e adia a investigação de uma suspeita relevante.",
+    1:"Não há indicação clínica de internação; a política privilegia o cuidado em liberdade e no território.",
+    3:"Perde a oportunidade de cuidado com alguém que chegou pedindo ajuda para as manchas."
+  }
+},
+
+/* ============ TEMA 7 — ADOLESCENTE ============ */
+{ t:7,
+  tema:"Saúde do adolescente — ética e contracepção",
+  caso:"Isabela, 15 anos, veio à UBS com a mãe para atualizar vacinas. No momento reservado a sós, pede orientação sobre contracepção porque pretende iniciar vida sexual com o namorado, de 16 anos. Não há sinais de violência. Ao final, a mãe entra na sala e pergunta ao médico: “Ela te contou alguma coisa que eu precise saber?”.",
+  pergunta:"Qual é a conduta mais adequada do médico?",
+  opcoes:[
+    "Manter sigilo sobre a conversa e, se Isabela quiser, oferecer apoio para o diálogo com a mãe",
+    "Informar à mãe o pedido de contraceptivo, pois ela é a responsável legal e acompanhou a consulta",
+    "Relatar os fatos de forma genérica, dizendo que a filha precisa de orientação sobre sexualidade",
+    "Pedir que a mãe autorize por escrito a orientação contraceptiva antes de dar continuidade ao cuidado"
+  ],
+  correta:0,
+  pista:"Tema de sexualidade trazido no momento a sós, sem risco de vida; pergunta direta da mãe ao final.",
+  conceito:"Sexualidade é tema confidencial na consulta do adolescente; o sigilo só é quebrado por risco de vida, sempre com comunicação ao adolescente. ECA e CFM reconhecem autonomia progressiva. O vínculo depende da garantia de confidencialidade.",
+  erros:{
+    1:"Idade e presença da mãe não justificam quebra de sigilo; não há risco de vida.",
+    2:"Mesmo “genérica”, a informação revela o conteúdo confidencial e rompe o vínculo com a adolescente.",
+    3:"Condicionar a orientação à autorização dos pais contraria a autonomia progressiva e o sigilo."
+  }
+},
+{ t:7,
+  tema:"Saúde do adolescente — ética e contracepção",
+  caso:"Laura, 15 anos, vem sozinha pedir anticoncepcional. Durante a conversa, com perguntas abertas, conta que anda muito triste desde o fim do ano letivo e que “já pensou em como se mataria”; guardou comprimidos do remédio da avó. Pede que o médico não conte nada aos pais, “nem sobre o namoro, nem sobre o resto”.",
+  pergunta:"Como o médico deve conduzir a questão do sigilo?",
+  opcoes:[
+    "Manter sigilo sobre tudo, pois romper a confiança agora aumentaria o risco de a adolescente não retornar",
+    "Quebrar o sigilo apenas sobre o risco de suicídio, avisando Laura, e preservar o tema da contracepção",
+    "Informar aos pais todo o conteúdo da consulta, incluindo o namoro e o pedido de anticoncepcional",
+    "Prescrever o anticoncepcional e agendar retorno em 30 dias para reavaliar os sintomas depressivos"
+  ],
+  correta:1,
+  pista:"Ideação suicida com plano e meios disponíveis — risco de vida — somada a um tema confidencial (sexualidade) que não se relaciona ao risco.",
+  conceito:"Risco de vida (suicídio, violência grave) justifica a quebra do sigilo, sempre comunicada ao adolescente. A quebra se limita ao necessário para proteger; sexualidade continua confidencial. Diante de risco imediato, não deixar a pessoa sem suporte.",
+  erros:{
+    0:"Com plano e meios, há risco de vida; manter sigilo absoluto deixa a adolescente desprotegida.",
+    2:"A quebra deve se restringir ao risco; expor a vida sexual extrapola o necessário à proteção.",
+    3:"Adiar em 30 dias ignora um risco de suicídio que exige ação imediata e ambiente seguro."
+  }
+},
+{ t:7,
+  tema:"Saúde do adolescente — ética e contracepção",
+  caso:"Beatriz, 15 anos, chega com a mãe para “uma consulta de rotina”. Ao cumprimentar a adolescente, o médico percebe que ela evita olhar para a mãe. Quando ele propõe conversar parte do tempo a sós, a mãe recusa: “Ela é menor, eu fico do começo ao fim”. Beatriz permanece calada.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Aceitar a presença da mãe durante toda a consulta, já que a adolescente ainda é menor de idade",
+    "Encerrar a consulta e agendar retorno para quando Beatriz puder comparecer à unidade sem a mãe",
+    "Pedir à mãe que aguarde fora durante toda a consulta, sem necessidade de explicar o motivo a ela",
+    "Explicar a ambas a rotina do momento a sós e os limites do sigilo, e conversar a sós com Beatriz"
+  ],
+  correta:3,
+  pista:"Consulta de adolescente com recusa materna ao momento a sós e sinais não verbais de desconforto.",
+  conceito:"Parte da consulta do adolescente deve ocorrer sem os pais, especialmente para temas sensíveis. Os limites do sigilo são explicados desde o início, para adolescente e família. Perguntas abertas e sem julgamento favorecem o vínculo.",
+  erros:{
+    0:"Abre mão do espaço privado que sustenta o vínculo e o acesso a temas sensíveis.",
+    1:"Nega o atendimento por questão contornável com diálogo e perde a oportunidade de cuidado.",
+    2:"Exclui a mãe sem explicação e sem pactuar o funcionamento da consulta com a família."
+  }
+},
+
+/* ============ TEMA 8 — RESOLUTIVIDADE 80% ============ */
+{ t:8,
+  tema:"Resolutividade da APS",
+  caso:"No verão, uma comunidade coberta por duas equipes de Saúde da Família registra aumento súbito de casos de diarreia aguda em crianças e idosos, a maioria sem sinais de gravidade. A secretaria cogita orientar a população a procurar diretamente o hospital regional “para não sobrecarregar as UBS”.",
+  pergunta:"Qual resposta é mais coerente com a organização do SUS?",
+  opcoes:[
+    "Direcionar todos os casos ao hospital regional, que tem mais recursos para responder a surtos",
+    "Suspender as consultas programadas das UBS até o fim do surto e atender apenas casos de diarreia",
+    "Organizar a resposta nas equipes de APS, referenciando apenas os casos que excedem sua complexidade",
+    "Aguardar a notificação de casos graves antes de definir o papel das unidades básicas na resposta ao surto"
+  ],
+  correta:2,
+  pista:"Problema de impacto coletivo, com casos majoritariamente leves, e proposta de desviá-los ao hospital.",
+  conceito:"Resolubilidade: diante de problema individual ou de impacto coletivo, o serviço deve estar capacitado para resolvê-lo até o nível de sua complexidade. O nível primário responde por cerca de 80% dos problemas, e a hierarquização regula o fluxo de referência e contrarreferência.",
+  erros:{
+    0:"Sobrecarrega o nível terciário com casos resolvíveis na APS e desorganiza a rede.",
+    1:"Resolver o surto não exige abandonar o cuidado programado; a APS maneja agudos e crônicos.",
+    3:"Espera passiva perde a oportunidade de resposta precoce, que é papel da APS no território."
+  }
+},
+{ t:8,
+  tema:"Resolutividade da APS",
+  caso:"Gilberto, 46 anos, pedreiro, procura a UBS por dor lombar mecânica há 10 dias, após carregar peso. O exame não mostra sinais de gravidade. Ele pede ressonância e encaminhamento ao ortopedista: “Meu colega foi direto no especialista e resolveu”. Diz que teme perder o emprego se não voltar logo ao trabalho.",
+  pergunta:"Qual é a conduta mais adequada do médico de família?",
+  opcoes:[
+    "Manejar na APS, explorando o medo e as expectativas de Gilberto e combinando plano e retorno",
+    "Solicitar a ressonância e o encaminhamento, respeitando a autonomia e a expectativa do paciente",
+    "Encaminhar ao ortopedista sem exames, que decidirá sobre a necessidade de investigação",
+    "Prescrever repouso absoluto e afastamento prolongado do trabalho, sem necessidade de retorno"
+  ],
+  correta:0,
+  pista:"Problema comum, sem sinais de gravidade, e uma expectativa ligada a um medo concreto (perder o emprego).",
+  conceito:"A APS resolve cerca de 80% dos problemas de saúde, encaminhando o que excede sua complexidade. O método centrado na pessoa explora sentimentos, ideias, efeito nas funções e expectativas para elaborar um plano conjunto — o que não equivale a atender pedidos sem indicação.",
+  erros:{
+    1:"Autonomia é decisão informada e compartilhada, não atendimento automático de pedidos sem indicação.",
+    2:"Encaminha um problema resolvível na APS, contribuindo para filas e fragmentação.",
+    3:"Ignora a preocupação central do paciente e abandona o seguimento, sem plano compartilhado."
+  }
+},
+{ t:8,
+  tema:"Resolutividade da APS",
+  caso:"Relatório estadual mostra que as internações por hipertensão e diabetes descompensados são três vezes mais frequentes nos bairros sem cobertura de Saúde da Família do que naqueles cobertos. O secretário de saúde pergunta à equipe técnica qual investimento seria mais efetivo para reduzir essas internações.",
+  pergunta:"Qual recomendação é mais coerente com as evidências sobre sistemas de saúde?",
+  opcoes:[
+    "Ampliar os leitos clínicos do hospital regional, para receber a demanda crescente de descompensações",
+    "Ampliar e qualificar a cobertura de APS nesses bairros, fortalecendo o cuidado contínuo e coordenado",
+    "Contratar cardiologistas e endocrinologistas para acompanhar todos os hipertensos e diabéticos",
+    "Instalar uma unidade de pronto-atendimento nos bairros descobertos para atender as descompensações"
+  ],
+  correta:1,
+  pista:"Internações evitáveis concentradas justamente onde não há cobertura de Saúde da Família.",
+  conceito:"Sistemas com forte referencial na APS são mais efetivos, mais satisfatórios, têm menor custo e são mais equitativos. A MFC, com cuidado contínuo e coordenado, é fundamental na redução de internações hospitalares e de visitas a especialistas.",
+  erros:{
+    0:"Trata a consequência (internação) e não a falta de cuidado contínuo que a produz.",
+    2:"Condições prevalentes são manejadas na APS; especialistas para todos sobrecarregam o nível secundário.",
+    3:"Pronto-atendimento responde à crise, mas não oferece o acompanhamento longitudinal que previne descompensações."
+  }
+},
+
+/* ============ TEMA 9 — DCNT ============ */
+{ t:9,
+  tema:"Gestão populacional de condições crônicas",
+  caso:"No Conjunto Esperança, o diagnóstico da equipe mostra alta prevalência de obesidade, diabetes e hipertensão. Moradores relatam que não há praça, calçadas seguras nem iluminação para caminhar, e que a única área aberta é o pátio da escola, fechado à noite e nos fins de semana. A equipe já orienta atividade física em todas as consultas.",
+  pergunta:"Qual ação da equipe é mais adequada para esse problema?",
+  opcoes:[
+    "Intensificar a orientação individual sobre atividade física, com metas semanais escritas para cada paciente",
+    "Encaminhar os pacientes com obesidade ao nível secundário para programa especializado de perda de peso",
+    "Considerar o problema fora do alcance da saúde e registrar a orientação já feita em cada prontuário",
+    "Articular com escola e lideranças o uso do pátio para atividades, construindo a ação com a comunidade"
+  ],
+  correta:3,
+  pista:"A orientação individual já existe; a barreira é ambiental (sem espaço seguro) e há um recurso comunitário subutilizado (pátio da escola).",
+  conceito:"Determinantes sociais raramente se resolvem apenas dentro da UBS: parcerias com escola, lideranças e outros setores, construindo ações com a comunidade. A intersetorialidade atua sobre os determinantes e condicionantes da saúde.",
+  erros:{
+    0:"Repete o que já é feito e responsabiliza o indivíduo por uma barreira do ambiente.",
+    1:"Condição prevalente é cuidada na APS; encaminhar não remove a barreira ambiental identificada.",
+    2:"A APS tem responsabilidade pelos determinantes do território e deve articular outros setores."
+  }
+},
+{ t:9,
+  tema:"Gestão populacional de condições crônicas",
+  caso:"A equipe da Vila Operária criou oficinas de alimentação para pessoas com diabetes, recomendando salmão, azeite extravirgem, castanhas e frutas vermelhas. Após quatro meses, a frequência caiu pela metade e os controles glicêmicos não mudaram. Os participantes dizem que “isso não cabe no nosso bolso” e que ninguém perguntou o que eles comem.",
+  pergunta:"Qual deve ser o próximo passo da equipe?",
+  opcoes:[
+    "Manter o conteúdo das oficinas e reforçar a importância da adesão às recomendações nutricionais",
+    "Refazer as oficinas com os participantes, a partir dos alimentos acessíveis e recursos do território",
+    "Encerrar as oficinas e encaminhar os pacientes com glicemia alterada para consulta com nutricionista",
+    "Substituir as oficinas por consultas individuais mais longas, com cardápios padronizados por escrito"
+  ],
+  correta:1,
+  pista:"Ação construída sem os participantes, desconectada da realidade econômica e sem resultado nos indicadores.",
+  conceito:"Ações devem ser construídas com a comunidade, não apenas para ela, compreendendo significados, prioridades e barreiras. Ser realista e elaborar plano conjunto são componentes do cuidado centrado na pessoa. Avaliar impacto permite rever a estratégia; recursos como feiras e hortas comunitárias ampliam o acesso a alimentos.",
+  erros:{
+    0:"Culpa o participante por um plano que ignora sua realidade; os indicadores já mostram a falha.",
+    2:"Abandona a ação coletiva em vez de corrigi-la e fragmenta um cuidado que cabe na APS.",
+    3:"Mantém a prescrição padronizada que motivou o fracasso, agora em formato individual."
+  }
+},
+{ t:9,
+  tema:"Gestão populacional de condições crônicas",
+  caso:"Após constatar aumento de 50% das pessoas com hipertensão e diabetes no território, a equipe decide destinar todos os turnos a consultas programadas e grupos dessas condições, e suspender o acolhimento à demanda espontânea. Em um mês, crianças com febre e adultos com dor aguda passam a procurar o pronto-socorro.",
+  pergunta:"Qual análise sobre essa decisão é mais adequada?",
+  opcoes:[
+    "É inadequada; a APS deve manejar ao mesmo tempo o cuidado programado das DCNT e as demandas agudas",
+    "É adequada, pois condições crônicas são a prioridade da APS e as agudas cabem aos serviços de urgência",
+    "É adequada temporariamente, até que todos os hipertensos e diabéticos estejam controlados no território",
+    "É inadequada apenas para crianças, que devem ter um turno exclusivo de demanda espontânea na unidade"
+  ],
+  correta:0,
+  pista:"A resposta às DCNT foi feita fechando o acesso às demais necessidades, com deslocamento imediato para a urgência.",
+  conceito:"O médico de família gere simultaneamente problemas agudos e crônicos de pessoas e coletivos. A APS é porta de entrada para necessidades agudas e programadas, e toda demanda deve ser acolhida, com resposta compatível com a necessidade.",
+  erros:{
+    1:"A APS é entrada para todas as novas necessidades; enviar agudos à urgência desorganiza a rede.",
+    2:"Não há prazo em que fechar o acesso aos agudos seja aceitável; a meta é o equilíbrio das agendas.",
+    3:"Adultos com demanda aguda também precisam de acesso; a questão não é a faixa etária."
+  }
+}
+];
+
+const NEW_B = [
+/* ============ TEMA 10 — CULPA E ABULIA ============ */
+{ t:10,
+  tema:"Saúde mental — culpa e abulia",
+  caso:"Márcio, 36 anos, motorista, está há três semanas sem ânimo para sair da cama, com culpa por “ter decepcionado todo mundo” e sem interesse pelo futebol que adorava. PHQ-9 de 17. Na anamnese, a esposa conta que, há dois anos, ele passou dez dias dormindo três horas por noite, “cheio de energia”, gastou as economias da família em um carro e depois “desabou”. Nega ideação suicida.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Iniciar ISRS em dose baixa, com retorno em quatro semanas para avaliar a resposta ao tratamento",
+    "Iniciar tricíclico, mais indicado quando há culpa intensa associada a perda de interesse e prazer",
+    "Considerar transtorno bipolar e referenciar, evitando iniciar antidepressivo isolado na APS",
+    "Tratar como episódio depressivo leve com psicoterapia e exercícios, já que não há ideação suicida"
+  ],
+  correta:2,
+  pista:"Episódio depressivo atual (abulia, culpa, PHQ-9 17) em alguém com história de episódio de redução da necessidade de sono, energia excessiva e gastos desproporcionais.",
+  conceito:"A história de mania deve ser investigada ao diagnóstico e diante de resposta anormal a antidepressivos. Caso associado a transtorno de humor bipolar é critério para referenciar; no episódio depressivo do bipolar, estabilizadores de humor (lítio ou valproato) fazem parte do manejo.",
+  erros:{
+    0:"Ignora a história sugestiva de mania; antidepressivo isolado não é a conduta em suspeita de bipolaridade.",
+    1:"Tricíclicos são alternativa com mais efeitos adversos e não resolvem a questão central: a suspeita de bipolaridade.",
+    3:"PHQ-9 de 17 e perda funcional indicam quadro moderado/grave, e a história de mania muda a conduta."
+  }
+},
+{ t:10,
+  tema:"Saúde mental — culpa e abulia",
+  caso:"Dona Neide, 68 anos, está há dois meses sem sair do quarto, quase sem comer, sem iniciativa para qualquer atividade. Afirma, com convicção inabalável, que “causou a doença de todos na família por seus pecados” e que ouve vozes dizendo que merece castigo. Perdeu 8 kg. Os filhos pedem “um calmante para ela dormir”.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Prescrever hipnótico para o sono e agendar retorno em um mês para iniciar investigação dos sintomas",
+    "Iniciar ISRS e acompanhar exclusivamente na APS, já que culpa é sintoma acessório da depressão",
+    "Aplicar o PHQ-2 e, se positivo, repetir em duas semanas antes de definir qualquer conduta",
+    "Reconhecer depressão grave com sintomas psicóticos e referenciar para avaliação especializada"
+  ],
+  correta:3,
+  pista:"Culpa com conteúdo delirante, alucinações auditivas, abulia intensa e perda de peso importante — incapacidade grave com sintomas psicóticos.",
+  conceito:"A culpa é sintoma acessório da depressão, mas, quando delirante e acompanhada de alucinações, caracteriza episódio grave com sintomas psicóticos — critério para referenciar. Antipsicóticos entram no tratamento quando há sintomas psicóticos. O risco de suicídio deve ser questionado diretamente.",
+  erros:{
+    0:"Trata apenas o sono e adia a abordagem de um quadro grave com sintomas psicóticos.",
+    1:"Culpa delirante com alucinações não é o sintoma acessório comum; o quadro exige referência.",
+    2:"Rastreamento serve para triagem; aqui o quadro já está evidente e grave, pedindo conduta imediata."
+  }
+},
+{ t:10,
+  tema:"Saúde mental — culpa e abulia",
+  caso:"Rafael, 24 anos, estudante de enfermagem, relata há três semanas desânimo, menos vontade de sair com os amigos e culpa por ter reprovado em uma disciplina. Continua indo às aulas, ao estágio e ao trabalho, mas “tudo custa mais”. PHQ-9 de 11. Sem história de mania, sem uso de substâncias e sem ideação suicida. Prefere evitar remédios, se possível.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Iniciar ISRS imediatamente, pois a presença de culpa indica evolução provável para quadro grave",
+    "Oferecer psicoeducação, atividade física e psicoterapia, com seguimento próximo e monitoramento",
+    "Referenciar ao CAPS para psicoterapia estruturada, dada a presença de sintomas fundamentais",
+    "Tranquilizar sobre reação normal à reprovação e dispensar seguimento, orientando retorno se piorar"
+  ],
+  correta:1,
+  pista:"Sintomas depressivos com funcionalidade preservada (sofrimento importante, mas funcional), PHQ-9 de 11 e preferência por evitar medicação.",
+  conceito:"PHQ-9 entre 9 e 14 sugere episódio leve; na classificação funcional, leve é funcional com sofrimento importante. A abordagem inclui psicoeducação, exercícios físicos, psicoterapia (TCC ou TIP), práticas integrativas e seguimento próximo — tratamento centrado na pessoa, na APS.",
+  erros:{
+    0:"Culpa é sintoma acessório e não define gravidade; quadro leve não exige antidepressivo de início.",
+    2:"Quadro leve é manejado na APS; CAPS é ponto de cuidado intensivo da RAPS.",
+    3:"Há episódio depressivo com sintomas fundamentais; dispensar seguimento perde a oportunidade de cuidado."
+  }
+},
+
+/* ============ TEMA 11 — 3 ANOS E 3 MESES ============ */
+{ t:11,
+  tema:"Puericultura — desenvolvimento aos 3 anos",
+  caso:"Enzo, 3 anos e 3 meses, nascido a termo e sem doenças, vem à consulta anual. Sobe escadas, fala frases completas e brinca de “casinha” com a irmã e os vizinhos. Crescimento adequado e vacinas em dia. A mãe conta que ele passa cerca de quatro horas por dia no celular “para ela conseguir trabalhar em casa” e pergunta o que mais pode fazer por ele.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Confirmar desenvolvimento adequado e orientar leitura, brincadeira e interação responsiva",
+    "Solicitar avaliação com fonoaudiologia, pelo risco de atraso de linguagem associado ao uso de telas",
+    "Considerar sinal de alerta pelo tempo de tela e antecipar o retorno para 30 dias com nova avaliação",
+    "Encaminhar para avaliação neurológica, já que o uso excessivo de telas pode causar regressão de marcos"
+  ],
+  correta:0,
+  pista:"Todos os marcos dos 3 anos presentes, crescimento normal; a demanda materna é sobre como estimular melhor.",
+  conceito:"Aos 3 anos espera-se subir escadas, formar frases completas e brincar com outras crianças. A consulta é oportunidade de orientação antecipatória, incluindo estimulação por leitura, brincadeira, interação responsiva e linguagem. Encaminhamento se reserva a sinais de alerta.",
+  erros:{
+    1:"Não há atraso de linguagem: Enzo forma frases completas, compatíveis com a idade.",
+    2:"Tempo de tela não está entre os sinais de alerta; o desenvolvimento observado é adequado.",
+    3:"Não há regressão nem outro sinal de alerta que justifique investigação neurológica."
+  }
+},
+{ t:11,
+  tema:"Puericultura — desenvolvimento aos 3 anos",
+  caso:"Davi, 3 anos e 3 meses, nascido a termo e sem doenças, sobe escadas e corre bem e fala frases, muitas vezes repetindo trechos de desenhos animados. A mãe relata que ele nunca quis brincar com outras crianças, raramente olha nos olhos quando chamado e não responde quando alguém tenta interagir. Não houve perda de habilidades. Peso e estatura estão adequados.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Tranquilizar, pois motor e linguagem estão adequados e a interação social deve melhorar com a escola",
+    "Encaminhar apenas para fonoaudiologia, já que a repetição de falas é um problema restrito à linguagem",
+    "Reconhecer sinal de alerta no domínio social e iniciar investigação e estímulos sem esperar",
+    "Reavaliar na próxima consulta anual, pois marcos são faixas de aquisição e há variação individual"
+  ],
+  correta:2,
+  pista:"Ausência de contato visual e de resposta a estímulos sociais, sem brincadeira com outras crianças, persistente desde sempre — sem regressão.",
+  conceito:"Ausência de contato visual e de resposta a estímulos sociais é sinal de alerta que exige investigação imediata, em qualquer idade. O desenvolvimento é avaliado em quatro domínios; alteração no pessoal-social não é compensada por motor e linguagem adequados. Intervenção precoce, sem esperar desnecessariamente.",
+  erros:{
+    0:"Domínios preservados não anulam um sinal de alerta em outro; esperar a escola atrasa a intervenção.",
+    1:"O achado central é social (contato visual, interação); restringir à linguagem perde o quadro.",
+    3:"Variação individual não se aplica a sinais de alerta; esperar um ano atrasa a intervenção precoce."
+  }
+},
+{ t:11,
+  tema:"Puericultura — desenvolvimento aos 3 anos",
+  caso:"Na consulta anual de Alice, 3 anos e 3 meses, nascida a termo e sem doenças, o pai conta preocupado que o primo, de 5 anos, já pula num pé só, conta histórias com começo, meio e fim e vai ao banheiro sozinho, enquanto Alice “ainda precisa de ajuda”. Alice sobe escadas, fala frases completas e brinca com outras crianças na creche. Crescimento adequado.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Encaminhar para avaliação do desenvolvimento, pela diferença de habilidades em relação ao primo",
+    "Explicar que as habilidades citadas são esperadas aos 4–5 anos e que Alice cumpre os marcos da idade",
+    "Iniciar treino intensivo de autonomia em higiene, para que Alice alcance o primo nos próximos meses",
+    "Considerar atraso motor e de autonomia e reavaliar em 30 dias antes de decidir o encaminhamento"
+  ],
+  correta:1,
+  pista:"Todos os marcos dos 3 anos presentes; a comparação é com habilidades de uma criança de 5 anos.",
+  conceito:"Pular, contar histórias, autonomia em higiene e brincadeira simbólica são marcos de 4–5 anos. Aos 3 anos espera-se subir escadas, frases completas e brincar com outras crianças. Marcos são faixas: a avaliação compara a criança com o esperado para a própria idade.",
+  erros:{
+    0:"A comparação é com marcos de outra faixa etária; não há atraso que justifique encaminhamento.",
+    2:"Cobra uma habilidade ainda não esperada para a idade, gerando pressão sem indicação.",
+    3:"Não há atraso: Alice cumpre os marcos dos 3 anos; antecipar retorno cria preocupação desnecessária."
+  }
+},
+
+/* ============ TEMA 12 — CONTROLE SOCIAL ============ */
+{ t:12,
+  tema:"Controle social e gestão do acesso",
+  caso:"Para discutir a abertura da UBS em horário estendido para trabalhadores do comércio, a coordenação forma um conselho local com seis gestores, quatro profissionais de saúde e dois usuários indicados pela própria coordenação. Na primeira reunião, os usuários dizem que não conseguem opinar diante da maioria.",
+  pergunta:"Qual ajuste é necessário para que esse conselho cumpra seu papel no SUS?",
+  opcoes:[
+    "Nenhum: a maioria técnica garante decisões mais qualificadas sobre o funcionamento da unidade",
+    "Transformar o conselho em instância apenas consultiva, deixando a decisão final com a coordenação",
+    "Substituir o conselho por uma pesquisa de satisfação, mais rápida para decidir o novo horário",
+    "Recompor o conselho de forma paritária, com metade de usuários escolhidos por suas entidades"
+  ],
+  correta:3,
+  pista:"Usuários em minoria, indicados pela própria gestão, sem condições reais de influenciar a decisão.",
+  conceito:"Conselhos de saúde são paritários — metade de usuários e metade entre governo, profissionais e prestadores —, com poder deliberativo. A participação ocorre por entidades representativas, garantindo a formulação e o controle das políticas pela população.",
+  erros:{
+    0:"Contraria a paridade e o próprio sentido do controle social, que é a participação da população.",
+    1:"Conselhos têm caráter deliberativo; reduzi-los a consulta esvazia o controle social.",
+    2:"Pesquisas podem subsidiar, mas não substituem a instância formal de participação e deliberação."
+  }
+},
+{ t:12,
+  tema:"Controle social e gestão do acesso",
+  caso:"O Conselho Local de Saúde da UBS Vila Nova, paritário e em funcionamento regular, discutirá a proposta de funcionamento até as 20h. A gestão tem dados de atendimento por turno, perfil de ocupação dos cadastrados e custos da mudança, mas pretende apresentar somente a proposta final, “para não confundir os conselheiros”.",
+  pergunta:"Qual postura da gestão é mais adequada?",
+  opcoes:[
+    "Apresentar os dados de forma compreensível e construir a decisão com o conselho, monitorando depois",
+    "Apresentar apenas a proposta final, pois dados técnicos detalhados cabem somente aos gestores da unidade",
+    "Adiar a discussão até que a gestão tenha certeza sobre a proposta, evitando divergências no conselho",
+    "Implantar o novo horário por decisão técnica e comunicar ao conselho após o primeiro mês de funcionamento"
+  ],
+  correta:0,
+  pista:"Conselho legítimo prestes a deliberar e uma gestão que pretende reter informação relevante para a decisão.",
+  conceito:"É dever das instituições oferecer as informações e conhecimentos necessários para que a população se posicione sobre as questões de sua saúde. Controle social inclui participar da formulação e acompanhar a execução; gestão participativa e comprometida com resultados.",
+  erros:{
+    1:"Reter informação impede o conselho de se posicionar, contrariando o dever de informar.",
+    2:"Divergência é parte do controle social; adiar para evitá-la esvazia a participação.",
+    3:"Decide sem o conselho e informa depois, invertendo a lógica de formulação participativa."
+  }
+},
+
+/* ============ TEMA 13 — SAÚDE INDÍGENA ============ */
+{ t:13,
+  tema:"Saúde indígena — competência cultural",
+  caso:"Dona Jupira, 49 anos, indígena, mora na cidade e tem diabetes. Deixou de comparecer às consultas há seis meses. Na visita domiciliar, conta à agente comunitária que, na recepção da UBS, riam de sua pintura corporal, faziam comentários sobre seu sotaque e chamavam seu nome “de qualquer jeito”. Diz que prefere “ficar sem remédio do que passar por isso de novo”.",
+  pergunta:"Qual é a resposta mais adequada da equipe?",
+  opcoes:[
+    "Orientar Dona Jupira a buscar atendimento em serviço de saúde indígena, mais adequado à sua cultura",
+    "Explicar a Dona Jupira que a adesão ao tratamento do diabetes independe de como foi recebida na unidade",
+    "Reconhecer a barreira cultural, trabalhar o acolhimento respeitoso com toda a equipe e retomar o vínculo",
+    "Registrar a recusa de acompanhamento em prontuário, respeitando a autonomia manifestada pela paciente"
+  ],
+  correta:2,
+  pista:"O afastamento não decorre de recusa do tratamento, mas de discriminação sofrida no próprio serviço.",
+  conceito:"Acessibilidade inclui barreiras culturais. O cuidado culturalmente seguro exige escuta respeitosa e compreensão de significados, língua e práticas. Universalidade garante atendimento sem distinção de raça ou cultura, e o MFC adapta sua prática ao contexto cultural.",
+  erros:{
+    0:"Transfere a responsabilidade e mantém a barreira; o direito ao cuidado na UBS do território é o mesmo.",
+    1:"Culpa a paciente por um problema produzido pelo serviço e não remove a barreira.",
+    3:"Ela não recusou o tratamento, e sim o desrespeito; registrar recusa encobre a falha do serviço."
+  }
+},
+{ t:13,
+  tema:"Saúde indígena — competência cultural",
+  caso:"A equipe planeja vacinar as crianças de uma aldeia, várias com esquema em atraso, incluindo a dose indicada para crianças indígenas aos 5 anos. As lideranças pedem que a ação ocorra dez dias depois, ao fim de um período ritual em que visitantes não entram na aldeia. Não há surto em curso. O supervisor quer manter a data “para não perder o cronograma”.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Manter a data, pois a vacinação é prioridade sanitária e se sobrepõe ao calendário ritual da aldeia",
+    "Pactuar a nova data com as lideranças e garantir a vacinação logo após, com acesso à UBS se necessário",
+    "Cancelar a ação até que a própria comunidade solicite a vacinação, respeitando sua autonomia coletiva",
+    "Vacinar apenas as crianças cujos pais aceitarem sair da aldeia durante o período ritual para a UBS"
+  ],
+  correta:1,
+  pista:"Pedido de adiamento curto, motivado por prática cultural, sem surto em curso e com esquemas atrasados.",
+  conceito:"Cuidado culturalmente seguro: construir plano compartilhado com a comunidade e seus agentes tradicionais, respeitando práticas e prioridades, sem abrir mão da segurança clínica e do acesso oportuno. Toda oportunidade deve ser usada para atualizar o esquema vacinal, sem coerção.",
+  erros:{
+    0:"Impõe a ação e desrespeita a comunidade, comprometendo o vínculo e a própria adesão futura.",
+    2:"Abandona a responsabilidade sanitária; respeitar a cultura não é deixar esquemas atrasados sem plano.",
+    3:"Pressiona as famílias a romper o período ritual, uma forma indireta de coerção."
+  }
+},
+
+/* ============ TEMA 14 — ANSIEDADE ============ */
+{ t:14,
+  tema:"Saúde mental — ansiedade",
+  caso:"Vanessa, 35 anos, contadora, relata há nove meses preocupação excessiva com trabalho, filhos e dinheiro, difícil de controlar, com insônia inicial, tensão muscular, irritabilidade e tremor nas mãos quando está tensa. Não usa substâncias; exames recentes estão normais. Continua trabalhando, com sofrimento importante. Diz: “Não quero tomar remédio, tenho medo de ficar dependente”.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Explicar que o transtorno exige medicação e iniciar ISRS, mesmo contra a preferência da paciente",
+    "Encaminhar ao psiquiatra, pois a recusa de medicação impede o manejo adequado na APS",
+    "Prescrever benzodiazepínico em dose baixa, por período curto, até que a paciente aceite o ISRS",
+    "Oferecer psicoeducação e TCC, com seguimento próximo, mantendo a medicação como opção a rediscutir"
+  ],
+  correta:3,
+  pista:"TAG (mais de 6 meses, preocupação excessiva e 3 ou mais sintomas), com funcionalidade preservada, exames normais e preferência clara por não usar remédio.",
+  conceito:"Psicoeducação é fundamental; a maior parte do manejo da ansiedade é feita na APS, centrada no paciente. Psicoterapia é indicada nos quadros leves e pode associar-se ao tratamento farmacológico; a TCC é a que tem maior evidência de benefício. ISRS/ISRSN são a 1ª escolha quando há indicação de medicação.",
+  erros:{
+    0:"Ignora a preferência da paciente e o papel da psicoterapia em quadro com funcionalidade preservada.",
+    1:"Recusa de medicação não é critério de referência; o manejo cabe à APS.",
+    2:"Não está entre as estratégias preconizadas e contradiz a preocupação da paciente com dependência."
+  }
+},
+{ t:14,
+  tema:"Saúde mental — ansiedade",
+  caso:"Seu Gilmar, 52 anos, compareceu 11 vezes à UBS e ao pronto-socorro nos últimos seis meses por dor no peito, tontura, formigamento nas mãos e “falta de ar”. Eletrocardiogramas, exames laboratoriais e avaliação cardiológica foram normais. Ele pede “um exame mais completo do coração”. Perdeu o emprego há oito meses e diz que “anda com os nervos à flor da pele”.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Rastrear ansiedade com perguntas-chave, acolhendo os sintomas e o estressor recente",
+    "Solicitar cateterismo cardíaco, pois a persistência da dor exige investigação invasiva",
+    "Orientar que os sintomas são “psicológicos” e que ele deve evitar novas idas ao serviço",
+    "Encaminhar ao cardiologista para nova avaliação, já que o paciente não está convencido"
+  ],
+  correta:0,
+  pista:"Sintomas físicos sem explicação médica após investigação adequada, hiperutilização do serviço e estressor importante (desemprego).",
+  conceito:"Devem ser rastreados para ansiedade pacientes com sintomas físicos sem explicação médica, que hiperutilizam o serviço, que parecem ansiosos ou passaram por estresse importante. Sintomas somáticos (dor torácica, tontura, parestesias, dispneia) fazem parte do quadro; exames seguem uso racional.",
+  erros:{
+    1:"Contraria o uso racional de exames; a investigação já foi adequada e normal.",
+    2:"Desqualifica o sofrimento, rompe o vínculo e não oferece diagnóstico nem cuidado.",
+    3:"Repete uma avaliação já feita e perpetua a hiperutilização, sem abordar o problema real."
+  }
+},
+{ t:14,
+  tema:"Saúde mental — ansiedade",
+  caso:"Wagner, 41 anos, em tratamento para transtorno de ansiedade generalizada com sertralina há seis semanas, conta que passou a beber quase uma garrafa de destilado por noite “para conseguir dormir e parar o tremor”, tem faltado ao trabalho, já tentou reduzir sem conseguir e acorda com tremores intensos. A preocupação excessiva e o medo persistem.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Aumentar a dose da sertralina, pois a melhora da ansiedade deve reduzir o consumo de álcool",
+    "Substituir a sertralina por benzodiazepínico, que trata a insônia e o tremor ao mesmo tempo",
+    "Referenciar pela associação com transtorno grave por uso de substâncias, mantendo o vínculo na APS",
+    "Manter o esquema atual e orientar que o paciente reduza o álcool por conta própria até o retorno"
+  ],
+  correta:2,
+  pista:"Ansiedade associada a uso de álcool grave: consumo diário elevado, perda de controle, prejuízo no trabalho e tremores ao acordar.",
+  conceito:"Caso de ansiedade associado a transtorno grave por uso de substâncias é critério para referenciar. A avaliação inclui uso de medicamentos e substâncias psicoativas. A APS segue coordenando o cuidado e mantendo o vínculo.",
+  erros:{
+    0:"Ignora a gravidade do uso de álcool, que é critério de referência por si só.",
+    1:"Troca o tratamento de 1ª escolha por outro não preconizado, sem abordar o uso de álcool.",
+    3:"Deixa sem cuidado um uso grave de álcool, com perda de controle e sintomas ao acordar."
+  }
+},
+
+/* ============ TEMA 15 — 6 MESES ============ */
+{ t:15,
+  tema:"Puericultura — marcos aos 6 meses",
+  caso:"Pedro, 6 meses, nascido a termo, vem à puericultura em uma UBS de Goiás. Senta com apoio, transfere objetos entre as mãos e balbucia; crescimento no mesmo canal. A mãe oferece água e chá de erva-doce desde os 3 meses, “porque o leite parecia fraco”. A família não é beneficiária de programa de transferência de renda. As vacinas estão em dia até os 5 meses.",
+  pergunta:"Qual é a conduta mais adequada nesta consulta?",
+  opcoes:[
+    "Manter o aleitamento com água e chás e adiar a introdução alimentar até que a criança complete 9 meses",
+    "Introdução alimentar com aleitamento, ferro profilático, megadose de vitamina A e vacinas da idade",
+    "Iniciar NutriSUS associado a sulfato ferroso e megadose de vitamina A, para ampliar a proteção nutricional",
+    "Substituir o leite materno por fórmula infantil, já que a mãe percebe o leite como fraco para o bebê"
+  ],
+  correta:1,
+  pista:"Marcos de 6 meses presentes; momento de transição alimentar; região Centro-Oeste; família fora do perfil do NutriSUS.",
+  conceito:"Aleitamento exclusivo até 6 meses, sem água ou chás; depois, introdução alimentar com manutenção do aleitamento até 2 anos ou mais. PNSF: ferro para crianças de 6 a 24 meses. Vitamina A: megadose de 6 a 59 meses no Norte, Nordeste e Centro-Oeste. Quem recebe NutriSUS não recebe ferro isolado nem megadose de vitamina A. Vacinas conferidas em toda consulta.",
+  erros:{
+    0:"Mantém água e chás, que não deveriam ter sido oferecidos, e atrasa a introdução alimentar indicada aos 6 meses.",
+    2:"Combina suplementos que não devem ser associados; além disso, a família não está no perfil do NutriSUS.",
+    3:"A percepção de leite fraco pede apoio ao aleitamento, não sua substituição."
+  }
+},
+{ t:15,
+  tema:"Puericultura — marcos aos 6 meses",
+  caso:"Lívia, 6 meses, nascida a termo, sorri, balbucia e acompanha objetos com o olhar. Senta com apoio, mas pega e transfere objetos apenas com a mão direita; o braço esquerdo fica mais “mole” e a mão esquerda permanece fechada na maior parte do tempo. A mãe acha que ela “vai ser destra”. Crescimento adequado.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Tranquilizar a mãe, pois a preferência manual já pode ser definida aos 6 meses de idade",
+    "Orientar estimulação do lado esquerdo em casa e reavaliar na consulta de 9 meses",
+    "Considerar atraso global do desenvolvimento e encaminhar para estimulação precoce geral",
+    "Reconhecer assimetria motora com preferência lateral precoce e investigar de imediato"
+  ],
+  correta:3,
+  pista:"Preferência manual aos 6 meses com hipotonia e mão fechada de um lado; demais domínios adequados.",
+  conceito:"Hipotonia ou assimetria motora — incluindo preferência lateral precoce e persistência de reflexos primitivos além da idade — é sinal de alerta que exige investigação imediata, em qualquer idade. Intervenção precoce, sem esperar desnecessariamente.",
+  erros:{
+    0:"Preferência lateral precoce é justamente um sinal de alerta, não um traço esperado aos 6 meses.",
+    1:"Adiar três meses diante de sinal de alerta atrasa a investigação e a intervenção precoce.",
+    2:"Não é atraso global: linguagem e social estão adequados; o achado é uma assimetria motora."
+  }
+},
+{ t:15,
+  tema:"Puericultura — marcos aos 6 meses",
+  caso:"Gael, 6 meses, nascido a termo, vem à primeira consulta após a mudança da família para o território. Senta com apoio, transfere objetos e balbucia; crescimento adequado. A Caderneta mostra vacinas até os 2 meses; as doses dos 3, 4 e 5 meses não foram feitas por causa da mudança. A mãe pergunta se será preciso “começar tudo de novo”.",
+  pergunta:"Qual é a conduta mais adequada em relação à vacinação?",
+  opcoes:[
+    "Atualizar o esquema aproveitando as doses já feitas, respeitando intervalos mínimos e registrando tudo",
+    "Reiniciar o esquema vacinal desde as vacinas dos 2 meses, para garantir a proteção completa da criança",
+    "Aguardar a consulta de 9 meses para atualizar as vacinas junto com as doses previstas para essa idade",
+    "Aplicar apenas as vacinas previstas para os 6 meses e desconsiderar as doses atrasadas do calendário"
+  ],
+  correta:0,
+  pista:"Desenvolvimento normal, esquema interrompido por mudança, dúvida da mãe sobre reiniciar.",
+  conceito:"No atraso vacinal, nunca reiniciar esquemas: aproveitar doses já administradas, respeitar intervalos mínimos, consultar as tabelas de atualização do PNI e registrar na Caderneta e no SIPNI. Toda consulta é oportunidade de atualizar o esquema.",
+  erros:{
+    1:"Reiniciar desconsidera doses válidas já aplicadas; a regra é aproveitá-las.",
+    2:"Perde uma oportunidade de vacinação e mantém a criança desprotegida por mais três meses.",
+    3:"Ignora as doses em atraso, deixando o esquema incompleto."
+  }
+},
+
+/* ============ TEMA 16 — FAVELA ============ */
+{ t:16,
+  tema:"Gestão de risco em território superpopuloso",
+  caso:"Na comunidade do Morro Azul, cerca de 10 mil pessoas para uma equipe, as vagas se esgotam com quem chega primeiro à fila. Os mapas das agentes comunitárias mostram idosos acamados sem visita há meses, gestantes que nunca foram à UBS e crianças com vacinas atrasadas — pessoas que, pela condição, não conseguem enfrentar a fila.",
+  pergunta:"Qual é a decisão mais adequada do médico com a equipe?",
+  opcoes:[
+    "Ampliar as fichas diárias por ordem de chegada, atendendo mais pessoas por turno na unidade",
+    "Manter o fluxo atual, já que a unidade atende em sua capacidade máxima durante todo o dia",
+    "Reservar parte da agenda para busca ativa e visitas às pessoas de maior risco mapeadas pelas agentes",
+    "Solicitar que os familiares tragam os acamados e as gestantes à unidade no primeiro horário do dia"
+  ],
+  correta:2,
+  pista:"A ordem de chegada seleciona quem consegue ir à fila, e os mais necessitados, identificados pelas agentes, ficam invisíveis.",
+  conceito:"Equidade exige priorizar por necessidade, não por ordem de chegada. O MFC é recurso de uma população definida e atende no consultório, no domicílio e em outros locais. Maior necessidade pede maior intensidade de acompanhamento, com busca ativa a partir do conhecimento do território.",
+  erros:{
+    0:"Mais fichas por ordem de chegada reproduzem a exclusão de quem não consegue ir à fila.",
+    1:"Aceita a invisibilidade dos mais vulneráveis, contrariando a responsabilidade sanitária.",
+    3:"Transfere à família uma barreira que é justamente o motivo da exclusão desses grupos."
+  }
+},
+{ t:16,
+  tema:"Gestão de risco em território superpopuloso",
+  caso:"Na comunidade da Pedreira, a única UBS fica no pé do morro, e moradores do alto levam mais de uma hora para chegar, por escadarias. A associação de moradores do alto oferece seu salão para atividades de saúde. A equipe, sobrecarregada, avalia se vale a pena usar o espaço.",
+  pergunta:"Qual decisão é mais adequada?",
+  opcoes:[
+    "Recusar a oferta, pois atividades fora da UBS comprometem a organização do fluxo de atendimento",
+    "Usar o salão apenas para palestras, mantendo todos os atendimentos clínicos restritos à unidade",
+    "Transferir os moradores do alto para outra equipe, mais próxima, ainda que já esteja sobrecarregada",
+    "Pactuar com a associação atendimentos e ações no salão, mantendo a continuidade do cuidado"
+  ],
+  correta:3,
+  pista:"Barreira geográfica importante, sobrecarga da equipe e um recurso oferecido pela própria comunidade.",
+  conceito:"O MFC é recurso de uma população definida e atende no consultório, no domicílio e em outros locais. Acessibilidade inclui barreiras físicas e de localização; parcerias com lideranças e construção com a comunidade ampliam o alcance da equipe em territórios de alta demanda.",
+  erros:{
+    0:"Mantém a barreira geográfica e desperdiça um recurso comunitário oferecido.",
+    1:"Aproveita o espaço de forma limitada e mantém a barreira para o cuidado clínico.",
+    2:"Transfere o problema para outra equipe sobrecarregada, sem resolver o acesso."
+  }
+},
+
+/* ============ TEMA 17 — PRIMEIRO CONTATO ============ */
+{ t:17,
+  tema:"Atributos da APS — acesso de primeiro contato",
+  caso:"Mariana, 34 anos, com lúpus acompanhado por reumatologista em hospital universitário, chega à UBS com tosse, coriza e dor de garganta há dois dias, sem sinais de gravidade. A técnica de enfermagem orienta: “Como você tem doença reumatológica, é melhor procurar seu especialista”. A próxima consulta no hospital é em três meses.",
+  pergunta:"Qual é a conduta mais adequada da equipe?",
+  opcoes:[
+    "Orientar Mariana a procurar o pronto-socorro do hospital universitário, onde está seu prontuário",
+    "Acolher e avaliar o quadro agudo na UBS, coordenando com o especialista o que for pertinente",
+    "Agendar consulta na UBS para depois da avaliação do reumatologista, evitando condutas conflitantes",
+    "Contatar o reumatologista para que ele defina a conduta antes de qualquer atendimento na unidade"
+  ],
+  correta:1,
+  pista:"Problema novo e comum em pessoa acompanhada por especialista para outra condição.",
+  conceito:"A APS é a entrada no sistema para todas as novas necessidades e problemas e fornece atenção à pessoa, não à enfermidade, coordenando a atenção dada em outros lugares. Ter um especialista para uma condição não retira da APS o primeiro contato para problemas novos.",
+  erros:{
+    0:"Desloca para a urgência hospitalar um problema comum, resolvível na APS.",
+    2:"Adia em meses o cuidado de um problema agudo que precisa de resposta oportuna.",
+    3:"Transfere ao especialista uma decisão de primeiro contato que cabe à APS."
+  }
+},
+{ t:17,
+  tema:"Atributos da APS — acesso de primeiro contato",
+  caso:"Para acabar com as reclamações de demora, a UBS Horizonte passou a atender tudo no mesmo dia e extinguiu a agenda programada. Três meses depois, não há filas para queixas agudas, mas consultas de pré-natal, puericultura e hipertensão passaram a ser feitas “quando sobra vaga”, e vários pacientes crônicos perderam o acompanhamento.",
+  pergunta:"Qual ajuste é mais adequado?",
+  opcoes:[
+    "Manter o modelo, já que o acesso de primeiro contato foi plenamente garantido pela unidade",
+    "Voltar à agenda totalmente programada, que garante previsibilidade para os pacientes crônicos",
+    "Organizar a agenda com espaço para demanda do dia e para cuidado programado, conforme a necessidade",
+    "Criar uma unidade separada para pré-natal, puericultura e crônicos, mantendo a UBS só para agudos"
+  ],
+  correta:2,
+  pista:"O acesso ao agudo melhorou à custa do cuidado programado e da continuidade.",
+  conceito:"Acesso oportuno é organizar resposta compatível com a necessidade, sem reduzir tudo a agendamento — e sem eliminar o cuidado programado. A APS acolhe necessidades agudas e programadas, e o atendimento inicial deve se conectar ao seguimento quando necessário.",
+  erros:{
+    0:"Primeiro contato sem continuidade compromete longitudinalidade e integralidade.",
+    1:"Reinstala a barreira para demandas agudas, que motivou a mudança inicial.",
+    3:"Fragmenta o cuidado e rompe a integralidade e o vínculo com a mesma equipe."
+  }
+},
+{ t:17,
+  tema:"Atributos da APS — acesso de primeiro contato",
+  caso:"Josiane, 48 anos, procura a UBS sem agendamento por dor de dente. No acolhimento, a enfermeira identifica pressão arterial de 168/104 mmHg, sem sintomas, confirmada em nova medida. Josiane nunca fez acompanhamento na unidade. A dor é resolvida no mesmo turno e ela é liberada sem outra orientação.",
+  pergunta:"O que faltou no atendimento de primeiro contato?",
+  opcoes:[
+    "Conectar o atendimento a um seguimento, confirmando a pressão e acolhendo a nova necessidade",
+    "Encaminhar Josiane ao cardiologista, já que a pressão elevada excede o escopo do acolhimento na UBS",
+    "Encaminhar ao pronto-socorro para tratamento imediato da pressão arterial elevada identificada",
+    "Nada: o acolhimento deve se restringir à queixa que motivou a procura pela unidade naquele dia"
+  ],
+  correta:0,
+  pista:"Achado relevante em pessoa sem vínculo com a unidade, sem sintomas, e liberação sem plano de continuidade.",
+  conceito:"Acolhimento é escuta qualificada, avaliação de necessidade e orientação responsável. A continuidade é parte do acesso: o atendimento inicial deve se conectar ao seguimento quando necessário. A APS maneja condições crônicas prevalentes.",
+  erros:{
+    1:"Hipertensão é manejada na APS; encaminhar não é necessário e fragmenta o cuidado.",
+    2:"Sem sintomas ou sinais de gravidade, não há indicação de urgência.",
+    3:"Restringir-se à queixa inicial perde a oportunidade e contraria o acolhimento de toda necessidade."
+  }
+},
+
+/* ============ TEMA 18 — RAPS ============ */
+{ t:18,
+  tema:"Política Nacional de Saúde Mental e RAPS",
+  caso:"Sérgio, 40 anos, com esquizofrenia estável, é acompanhado há cinco anos pelo CAPS e frequenta suas oficinas todos os dias. Diz que gostaria de voltar a trabalhar com marcenaria e de participar do coral da igreja do bairro. A mãe prefere que ele “fique só no CAPS, onde está protegido”.",
+  pergunta:"Qual orientação é mais coerente com a Política Nacional de Saúde Mental?",
+  opcoes:[
+    "Manter Sérgio apenas nas atividades do CAPS, que oferecem ambiente protegido e previsível",
+    "Encaminhar Sérgio a um serviço residencial, para que ele ganhe autonomia longe da família",
+    "Aguardar a remissão completa dos sintomas antes de discutir trabalho e atividades comunitárias",
+    "Apoiar a inserção em trabalho e atividades do bairro, com o CAPS e a APS acompanhando o processo"
+  ],
+  correta:3,
+  pista:"Paciente estável que deseja atividades no território, e uma proposta familiar de confiná-lo ao serviço.",
+  conceito:"A Lei 10.216 tem como objetivo, além do controle de sintomas, a reinserção social e o pleno exercício da cidadania. O desafio é habitar os circuitos de trocas nos territórios, e não criar circuitos paralelos e protegidos. Saúde mental é também política de inclusão.",
+  erros:{
+    0:"Cria um circuito paralelo e protegido, contrário à reinserção social no território.",
+    1:"Não há indicação de moradia assistida; ele tem família e o desejo é de inserção comunitária.",
+    2:"Reinserção faz parte do cuidado; esperar remissão completa adia a cidadania sem necessidade."
+  }
+},
+{ t:18,
+  tema:"Política Nacional de Saúde Mental e RAPS",
+  caso:"Tânia, 31 anos, teve alta ontem após 12 dias em leito de saúde mental de hospital geral por um episódio psicótico. O relatório de alta traz ajuste de medicação e orientação de seguimento. Ela mora no território da UBS e já era acompanhada pela equipe antes da crise. A família liga para a UBS sem saber “a quem procurar agora”.",
+  pergunta:"Qual deve ser o papel da equipe de APS neste momento?",
+  opcoes:[
+    "Aguardar que o CAPS assuma integralmente o caso, já que a paciente teve episódio psicótico",
+    "Retomar o contato precocemente e articular o seguimento com o CAPS, coordenando o cuidado com a família",
+    "Orientar a família a retornar ao hospital geral sempre que houver qualquer dúvida sobre o tratamento",
+    "Agendar consulta de rotina conforme a disponibilidade habitual da agenda, sem outras ações específicas"
+  ],
+  correta:1,
+  pista:"Transição de cuidado após internação breve, paciente com vínculo prévio na UBS e família sem saber o fluxo.",
+  conceito:"Na RAPS, os leitos hospitalares são um ponto usado quando necessário, com retorno ao território. A APS é porta de entrada, forma vínculo longitudinal e coordena o cuidado na rede, articulando com o CAPS o cuidado mais intensivo quando indicado.",
+  erros:{
+    0:"A APS não deixa de ser coordenadora do cuidado; o vínculo prévio é recurso central na transição.",
+    2:"O hospital é ponto de internação, não de seguimento; isso fragmenta o cuidado.",
+    3:"A transição pós-alta exige contato oportuno e articulação, não agenda de rotina."
+  }
+},
+{ t:18,
+  tema:"Política Nacional de Saúde Mental e RAPS",
+  caso:"Aline, 27 anos, com primeiro episódio depressivo moderado, sem sintomas psicóticos, sem história de mania e sem ideação suicida, vai direto ao CAPS pedir “um psiquiatra”, por indicação de uma amiga. Ela é cadastrada em uma UBS com equipe de Saúde da Família que conta com apoio matricial em saúde mental.",
+  pergunta:"Qual é o fluxo de cuidado mais adequado na RAPS?",
+  opcoes:[
+    "Tratamento pela equipe de APS, com apoio matricial se preciso e CAPS se houver maior gravidade",
+    "Acompanhamento no CAPS, que é o serviço de referência para qualquer transtorno mental na rede",
+    "Encaminhamento para ambulatório de psiquiatria, já que o episódio é moderado e exige medicação",
+    "Internação breve em leito de hospital geral, para início supervisionado do antidepressivo"
+  ],
+  correta:0,
+  pista:"Quadro moderado sem critérios de gravidade ou de referência, em pessoa cadastrada em equipe com apoio matricial.",
+  conceito:"Na RAPS, a APS é porta de entrada preferencial: acolhe, trata e acompanha quadros compatíveis com sua capacidade. O CAPS é ponto de cuidado intensivo, articulado conforme gravidade. O apoio matricial amplia a resolutividade da APS; a maior parte do tratamento da depressão ocorre na APS.",
+  erros:{
+    1:"O CAPS é para cuidado intensivo; não é a porta de entrada para todo transtorno mental.",
+    2:"Episódio moderado sem critério de referência é tratado na APS, que tem 1ª escolha terapêutica disponível.",
+    3:"Não há indicação clínica de internação; a política privilegia o cuidado em liberdade."
+  }
+},
+
+/* ============ TEMA 19 — ESCORE-Z ============ */
+{ t:19,
+  tema:"Antropometria infantil — escore-Z",
+  caso:"Yuri, 2 anos, teve diarreia persistente por três semanas após uma viagem da família. Na consulta de puericultura: peso/estatura com escore-Z de −2,3; IMC/idade com escore-Z de −2,2; estatura/idade com escore-Z de −0,4. Nas consultas anteriores, todos os índices estavam próximos de zero. Está ativo e aceitando bem a alimentação.",
+  pergunta:"Qual é a classificação e a conduta mais adequadas?",
+  opcoes:[
+    "Baixa estatura por agravo crônico; investigar doenças de longa duração que comprometem o crescimento",
+    "Normalidade, pois a estatura está preservada e a criança está ativa e aceitando a alimentação",
+    "Magreza de instalação recente; investigar a causa, apoiar a nutrição e reavaliar em curto prazo",
+    "Baixo peso para a idade, com indicação de internação para recuperação nutricional supervisionada"
+  ],
+  correta:2,
+  pista:"Índices de proporção (peso/estatura e IMC/idade) abaixo de −2 com estatura preservada, após quadro agudo, em criança antes eutrófica.",
+  conceito:"Peso/estatura ou IMC/idade abaixo de −2 DP indicam magreza. O peso é a medida mais sensível a alterações agudas; a estatura, a agravos crônicos. Duas medidas consecutivas de peso/estatura abaixo de −2 Z configuram falha de crescimento; a conduta inclui investigação, suporte nutricional e acompanhamento mais frequente.",
+  erros:{
+    0:"A estatura está preservada; o déficit é de peso em relação ao tamanho, e recente.",
+    1:"Estatura normal não anula a magreza, que tem índice próprio abaixo de −2.",
+    3:"O índice alterado não é peso/idade, e não há gravidade que justifique internação."
+  }
+},
+{ t:19,
+  tema:"Antropometria infantil — escore-Z",
+  caso:"Sofia nasceu com 30 semanas de idade gestacional e está com 4 meses de idade cronológica. Mama bem e ganha peso de forma contínua. Ao plotar o peso na Caderneta pela idade cronológica, o escore-Z de peso/idade é −2,5; plotado pela idade corrigida, é −0,3. A mãe se assusta com o “baixo peso” anotado por outro profissional.",
+  pergunta:"Qual é a interpretação mais adequada?",
+  opcoes:[
+    "Baixo peso para a idade, com indicação de suplementação calórica e retorno semanal para pesagem",
+    "Baixo peso para a idade, que deve ser mantido no registro até a criança completar 2 anos",
+    "Magreza, pois o escore-Z abaixo de −2 em prematuros indica desproporção entre peso e comprimento",
+    "Crescimento adequado, pois em prematuros a avaliação usa a idade corrigida até os 24–36 meses"
+  ],
+  correta:3,
+  pista:"Prematura de 30 semanas, 4 meses cronológicos (cerca de 1 mês corrigido), ganho contínuo e escore-Z normal pela idade corrigida.",
+  conceito:"A escolha da curva depende do contexto clínico: prematuros usam idade corrigida até 24–36 meses. A leitura automática de um ponto na curva sem considerar o contexto leva a interpretações equivocadas; a trajetória importa mais que o ponto isolado.",
+  erros:{
+    0:"Classifica pela idade cronológica, o que não se aplica a prematuros nessa idade.",
+    1:"Mantém um rótulo baseado na idade errada, ignorando a correção para prematuridade.",
+    2:"Magreza se define por peso/estatura ou IMC/idade; aqui o índice é peso/idade e está normal pela idade corrigida."
+  }
+},
+{ t:19,
+  tema:"Antropometria infantil — escore-Z",
+  caso:"Miguel, 3 anos, tem síndrome de Down, é acompanhado pela equipe desde o nascimento e cresce de forma estável. Em uma consulta com profissional recém-chegado, a estatura é plotada na curva da OMS 2006 e resulta em escore-Z de estatura/idade de −2,6. O profissional registra “baixa estatura” e propõe investigação ampla.",
+  pergunta:"Qual é a conduta mais adequada?",
+  opcoes:[
+    "Manter o registro de baixa estatura e solicitar investigação laboratorial ampla de causas crônicas",
+    "Reavaliar o crescimento em curvas específicas para síndrome de Down, observando a trajetória",
+    "Encaminhar para avaliação endocrinológica imediata, pela estatura abaixo de −2 desvios-padrão",
+    "Desconsiderar a estatura nessa criança, já que alterações de crescimento são esperadas na síndrome"
+  ],
+  correta:1,
+  pista:"Criança com síndrome de Down, crescimento estável ao longo do tempo, avaliada em curva de referência geral.",
+  conceito:"Síndrome de Down tem curvas de crescimento específicas; crianças com necessidades especiais têm curvas e marcos próprios. A leitura de um ponto sem o contexto clínico leva a interpretações equivocadas, e a trajetória vale mais que a medida isolada.",
+  erros:{
+    0:"Usa a curva inadequada para a condição e propõe investigação desnecessária.",
+    2:"O desvio decorre da curva usada, não de alteração comprovada; encaminhar é precipitado.",
+    3:"O crescimento deve ser acompanhado, mas na curva correta; desconsiderá-lo perde alterações reais."
+  }
+}
+];
+
+const ALLQ = [...BASE, ...NEW_A, ...NEW_B];
+/* ordem fixa: sem temas vizinhos repetidos e sem 3 gabaritos iguais seguidos */
+const ORDER = [0, 1, 49, 22, 62, 34, 42, 69, 19, 10, 50, 40, 6, 29, 57, 52, 43, 37, 17, 26, 64, 12, 67, 65, 63, 38, 41, 5, 11, 53, 15, 68, 35, 51, 56, 33, 66, 39, 45, 25, 20, 59, 28, 31, 18, 60, 55, 4, 7, 21, 24, 32, 44, 61, 54, 47, 30, 8, 27, 46, 9, 2, 48, 13, 23, 14, 16, 3, 36, 58];
+const QUESTIONS = ORDER.map(i => ALLQ[i]);
+
+
+/* =====================================================================
+   ESTADO E PERSISTÊNCIA
+   ===================================================================== */
+const LETTERS = ["A","B","C","D"];
+const KEY = "simulado-mfc-enamed-70q-v2";
+const ALL = QUESTIONS.map((_,i)=>i);
+
+function freshState(){ return { set:ALL.slice(), answers:{}, pos:0, view:"start", mode:"full", mapFilter:"all" }; }
+let S = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return freshState();
+    const d = JSON.parse(raw);
+    if(!d || !Array.isArray(d.set) || !d.set.length || d.set.some(i=>typeof i!=="number"||i<0||i>=QUESTIONS.length)) return freshState();
+    const st = Object.assign(freshState(), d);
+    st.pos = Math.min(Math.max(0, st.pos|0), st.set.length-1);
+    return st;
+  }catch(e){ return freshState(); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+const isAnswered = id => Object.prototype.hasOwnProperty.call(S.answers, id);
+const isRight = id => isAnswered(id) && S.answers[id] === QUESTIONS[id].correta;
+function tally(){
+  let ok=0, err=0, blank=0;
+  S.set.forEach(id=>{ if(!isAnswered(id)) blank++; else if(isRight(id)) ok++; else err++; });
+  return {ok,err,blank,total:S.set.length};
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const vStart=$("#vStart"), vQuiz=$("#vQuiz"), vResult=$("#vResult"), topbar=$("#topbar");
+
+function render(){
+  vStart.hidden = S.view!=="start";
+  vQuiz.hidden = S.view!=="quiz";
+  vResult.hidden = S.view!=="result";
+  topbar.hidden = S.view==="start";
+  if(S.view==="start") renderStart();
+  if(S.view==="quiz") renderQuiz();
+  if(S.view==="result") renderResult();
+  renderChrome();
+  save();
+}
+
+function renderStart(){
+  const answered = Object.keys(S.answers).length;
+  $("#sTotal").textContent = QUESTIONS.length;
+  $("#sDone").textContent = answered;
+  const hasProgress = answered>0 || S.pos>0 || S.mode!=="full";
+  $("#btnStart").textContent = hasProgress ? "Continuar" : "Iniciar";
+  $("#btnFresh").hidden = !hasProgress;
+}
+
+function renderChrome(){
+  const t = tally();
+  const pad = n => String(n).padStart(2,"0");
+  $("#counter").innerHTML = S.view==="result"
+    ? `Resultado <span class="mode">${t.ok}/${t.total}</span>`
+    : `<b>${pad(S.pos+1)}</b> / ${pad(S.set.length)}${S.mode==="retry"?'<span class="mode">refazendo erradas</span>':''}`;
+  $("#btnFinish").textContent = S.view==="result" ? "Resultado" : "Finalizar";
+  // barra segmentada
+  const prog = $("#progress");
+  prog.innerHTML = S.set.map((id,p)=>{
+    const cls = ["seg"];
+    if(isAnswered(id)) cls.push(isRight(id)?"ok":"err");
+    if(p===S.pos && S.view==="quiz") cls.push("cur");
+    const st = !isAnswered(id)?"em branco":(isRight(id)?"certa":"errada");
+    return `<button type="button" class="${cls.join(" ")}" data-p="${p}" aria-label="Questão ${p+1}, ${st}"></button>`;
+  }).join("");
+  renderMap();
+}
+
+function renderMap(){
+  const f = S.mapFilter;
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.f===f)));
+  const items = S.set.map((id,p)=>({id,p})).filter(({id})=>{
+    if(f==="err") return isAnswered(id) && !isRight(id);
+    if(f==="blank") return !isAnswered(id);
+    return true;
+  });
+  $("#cells").innerHTML = items.length
+    ? items.map(({id,p})=>{
+        const cls=["cell"];
+        if(isAnswered(id)) cls.push(isRight(id)?"ok":"err");
+        if(p===S.pos && S.view==="quiz") cls.push("cur");
+        return `<button type="button" class="${cls.join(" ")}" data-p="${p}">${String(p+1).padStart(2,"0")}</button>`;
+      }).join("")
+    : `<div class="map-empty" style="grid-column:1/-1">${f==="err"?"Nenhuma questão errada.":"Nenhuma questão em branco."}</div>`;
+}
+
+function renderQuiz(){
+  const id = S.set[S.pos];
+  const q = QUESTIONS[id];
+  const ans = isAnswered(id) ? S.answers[id] : null;
+  const done = ans!==null;
+  const last = S.pos===S.set.length-1;
+
+  const opts = q.opcoes.map((txt,i)=>{
+    let cls="opt";
+    if(done){
+      if(i===q.correta) cls+=" right";
+      else if(i===ans) cls+=" wrong";
+      else cls+=" dim";
+    }
+    return `<button type="button" class="${cls}" data-i="${i}" ${done?"disabled":""}><span class="key">${LETTERS[i]}</span><span>${txt}</span></button>`;
+  }).join("");
+
+  let fb="";
+  if(done){
+    const ok = ans===q.correta;
+    const alts = Object.keys(q.erros).map(Number).sort((a,b)=>a-b)
+      .map(i=>`<li><span class="k">${LETTERS[i]}</span><span>${q.erros[i]}</span></li>`).join("");
+    fb = `<div class="fb ${ok?"is-ok":"is-err"}" role="status">
+      <div class="fb-head"><span class="dot"></span>${ok?"Resposta correta":"Resposta incorreta"}<span class="gab">Gabarito: ${LETTERS[q.correta]}</span></div>
+      <div class="fb-body">
+        <div class="fb-sec"><h3>Pista do caso</h3><p>${q.pista}</p></div>
+        <div class="fb-sec"><h3>Conceito testado</h3><p>${q.conceito}</p></div>
+        <div class="fb-sec"><h3>Análise das alternativas</h3><ul class="fb-alts">${alts}</ul></div>
+      </div></div>`;
+  }
+
+  const fig = q.figura ? `<figure class="figure">${q.figura}<figcaption>${q.legenda||""}</figcaption></figure>` : "";
+
+  vQuiz.innerHTML = `
+    <div class="q-meta"><span class="q-num">Questão ${String(S.pos+1).padStart(2,"0")}</span></div>
+    <p class="q-case">${q.caso}</p>
+    ${fig}
+    <p class="q-ask">${q.pergunta}</p>
+    <div class="opts" role="group" aria-label="Alternativas">${opts}</div>
+    ${fb}
+    <div class="nav">
+      <button type="button" class="btn" id="bPrev" ${S.pos===0?"disabled":""}>Anterior</button>
+      <span class="spacer"></span>
+      <span class="hint">${done?"<kbd>Enter</kbd> para avançar":"<kbd>A</kbd>–<kbd>D</kbd> para responder"}</span>
+      <button type="button" class="btn primary" id="bNext">${last?"Ver resultado":"Próxima"}</button>
+    </div>`;
+}
+
+function renderResult(){
+  const t = tally();
+  const pct = t.total ? Math.round(t.ok/t.total*100) : 0;
+  let msg;
+  if(t.blank===t.total) msg = "Nenhuma questão foi respondida ainda.";
+  else if(pct>=80) msg = "Desempenho sólido. Revise as erradas para fechar as lacunas restantes.";
+  else if(pct>=60) msg = "Bom caminho. Refaça as erradas e releia a análise das alternativas de cada uma.";
+  else msg = "Vale revisar cada questão com calma: a pista do caso mostra onde o raciocínio deveria ancorar.";
+  const wrongCount = t.err;
+  vResult.innerHTML = `
+    <h2>${S.mode==="retry"?"Resultado — refazendo erradas":"Resultado do simulado"}</h2>
+    <div class="score">
+      <div class="pct">${pct}<small>%</small></div>
+      <div class="breakdown">
+        <div><div class="n ok">${t.ok}</div><div class="l">acertos</div></div>
+        <div><div class="n err">${t.err}</div><div class="l">erros</div></div>
+        <div><div class="n blank">${t.blank}</div><div class="l">em branco</div></div>
+      </div>
+    </div>
+    <p class="summary">${msg}</p>
+    <div class="actions">
+      <button type="button" class="btn primary" id="rReview">Revisar questões</button>
+      <button type="button" class="btn" id="rRetry" ${wrongCount?"":"disabled"}>Refazer erradas${wrongCount?` (${wrongCount})`:""}</button>
+      <button type="button" class="btn" id="rHome">Início</button>
+    </div>
+    ${topicReport()}
+    <div class="result-grid">${S.set.map((id,p)=>{
+      const cls=["cell"]; if(isAnswered(id)) cls.push(isRight(id)?"ok":"err");
+      return `<button type="button" class="${cls.join(" ")}" data-p="${p}" aria-label="Revisar questão ${p+1}">${String(p+1).padStart(2,"0")}</button>`;
+    }).join("")}</div>`;
+}
+
+const TOPICOS = {1:"Genograma",2:"PNAB e diretrizes",3:"Território de alta vulnerabilidade",4:"Depressão — reavaliação",5:"Equipe de Saúde da Família",6:"População em situação de rua",7:"Saúde do adolescente",8:"Resolutividade da APS",9:"DCNT e gestão populacional",10:"Culpa e abulia",11:"Desenvolvimento aos 3 anos",12:"Controle social e acesso",13:"Saúde indígena",14:"Ansiedade",15:"Marcos aos 6 meses",16:"Gestão de risco na favela",17:"Acesso de primeiro contato",18:"Saúde mental e RAPS",19:"Antropometria e escore-Z"};
+function topicReport(){
+  const g={};
+  S.set.forEach(id=>{ const t=QUESTIONS[id].t; g[t]=g[t]||{ok:0,n:0}; g[t].n++; if(isRight(id)) g[t].ok++; });
+  const rows=Object.keys(g).map(Number).map(t=>({t,ok:g[t].ok,n:g[t].n,r:g[t].ok/g[t].n}))
+    .sort((a,b)=>a.r-b.r||a.t-b.t);
+  const weak=rows.filter(x=>x.r<0.5).map(x=>TOPICOS[x.t]);
+  const tip = weak.length ? `Priorize a revisão de: ${weak.join(", ")}.` : "Nenhum assunto abaixo de 50% de acerto.";
+  return `<div class="topics"><h3>Desempenho por assunto</h3><p class="topics-tip">${tip}</p><ul>${rows.map(x=>{
+    const cls = x.r>=0.75?"good":(x.r>=0.5?"mid":"bad");
+    return `<li class="${cls}"><span class="tn">${TOPICOS[x.t]}</span><span class="tbar"><i style="width:${Math.round(x.r*100)}%"></i></span><span class="tv">acertou ${x.ok} de ${x.n}</span></li>`;
+  }).join("")}</ul></div>`;
+}
+
+/* =====================================================================
+   AÇÕES
+   ===================================================================== */
+function go(p){
+  if(p<0||p>=S.set.length) return;
+  S.pos=p; S.view="quiz"; closeMap(); render();
+  window.scrollTo({top:0,behavior:"auto"});
+}
+function answer(i){
+  const id=S.set[S.pos];
+  if(S.view!=="quiz"||isAnswered(id)||i<0||i>3) return;
+  S.answers[id]=i; render();
+  const fb=document.querySelector(".fb");
+  if(fb) fb.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"nearest"});
+}
+function next(){
+  if(S.pos<S.set.length-1) go(S.pos+1);
+  else finish();
+}
+function finish(){
+  const t=tally();
+  if(S.view==="result") return;
+  if(t.blank>0){
+    confirmBox("Finalizar simulado?", `Há ${t.blank} ${t.blank===1?"questão":"questões"} em branco. Elas serão contadas como não respondidas.`, "Finalizar", ()=>{ S.view="result"; closeMap(); render(); window.scrollTo(0,0); });
+  } else { S.view="result"; closeMap(); render(); window.scrollTo(0,0); }
+}
+function retryWrong(){
+  const wrong=S.set.filter(id=>isAnswered(id)&&!isRight(id));
+  if(!wrong.length) return;
+  wrong.forEach(id=>delete S.answers[id]);
+  S.set=wrong; S.pos=0; S.mode="retry"; S.view="quiz"; S.mapFilter="all";
+  render(); window.scrollTo(0,0);
+}
+function resetAll(){
+  confirmBox("Reiniciar simulado?", "Todas as respostas serão apagadas e o simulado volta para a questão 1.", "Reiniciar", ()=>{
+    S=freshState(); S.view="quiz"; render(); window.scrollTo(0,0);
+  });
+}
+
+/* ---------- mapa ---------- */
+const mapEl=$("#map"), mapBtn=$("#btnMap");
+function openMap(){ mapEl.hidden=false; mapBtn.setAttribute("aria-expanded","true"); renderMap(); }
+function closeMap(){ mapEl.hidden=true; mapBtn.setAttribute("aria-expanded","false"); }
+mapBtn.addEventListener("click",e=>{ e.stopPropagation(); mapEl.hidden?openMap():closeMap(); });
+mapEl.addEventListener("click",e=>{
+  e.stopPropagation();
+  const chip=e.target.closest(".chip");
+  if(chip){ S.mapFilter=chip.dataset.f; renderMap(); save(); return; }
+  const cell=e.target.closest(".cell");
+  if(cell) go(+cell.dataset.p);
+});
+document.addEventListener("click",e=>{ if(!mapEl.hidden && !mapEl.contains(e.target)) closeMap(); });
+
+/* ---------- modal ---------- */
+const modal=$("#modal"); let modalCb=null, lastFocus=null;
+function confirmBox(title,text,okLabel,cb){
+  $("#mTitle").textContent=title; $("#mText").textContent=text; $("#mOk").textContent=okLabel;
+  modalCb=cb; lastFocus=document.activeElement; modal.hidden=false; $("#mOk").focus();
+}
+function closeModal(run){
+  modal.hidden=true; const cb=modalCb; modalCb=null;
+  if(run&&cb) cb(); else if(lastFocus) lastFocus.focus();
+}
+$("#mOk").addEventListener("click",()=>closeModal(true));
+$("#mCancel").addEventListener("click",()=>closeModal(false));
+modal.addEventListener("click",e=>{ if(e.target===modal) closeModal(false); });
+
+/* ---------- botões fixos ---------- */
+$("#btnStart").addEventListener("click",()=>{ S.view="quiz"; render(); window.scrollTo(0,0); });
+$("#btnFresh").addEventListener("click",()=>{
+  confirmBox("Começar do zero?","As respostas salvas serão apagadas.","Começar",()=>{ S=freshState(); S.view="quiz"; render(); window.scrollTo(0,0); });
+});
+$("#btnHome").addEventListener("click",()=>{ closeMap(); S.view="start"; render(); window.scrollTo(0,0); });
+$("#btnReset").addEventListener("click",()=>{ closeMap(); resetAll(); });
+$("#btnFinish").addEventListener("click",()=>{ closeMap(); finish(); });
+$("#progress").addEventListener("click",e=>{ const b=e.target.closest(".seg"); if(b) go(+b.dataset.p); });
+
+vQuiz.addEventListener("click",e=>{
+  const o=e.target.closest(".opt"); if(o){ answer(+o.dataset.i); return; }
+  if(e.target.closest("#bPrev")) go(S.pos-1);
+  if(e.target.closest("#bNext")) next();
+});
+vResult.addEventListener("click",e=>{
+  if(e.target.closest("#rReview")) go(0);
+  else if(e.target.closest("#rRetry")) retryWrong();
+  else if(e.target.closest("#rHome")){ S.view="start"; render(); window.scrollTo(0,0); }
+  else { const c=e.target.closest(".cell"); if(c) go(+c.dataset.p); }
+});
+
+/* ---------- teclado ---------- */
+document.addEventListener("keydown",e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  if(!modal.hidden){
+    if(e.key==="Escape"){ e.preventDefault(); closeModal(false); }
+    return;
+  }
+  if(e.key==="Escape" && !mapEl.hidden){ closeMap(); mapBtn.focus(); return; }
+  if(S.view==="start"){
+    if(e.key==="Enter" && document.activeElement===document.body){ e.preventDefault(); $("#btnStart").click(); }
+    return;
+  }
+  if(S.view!=="quiz") return;
+  const k=e.key.toLowerCase();
+  const idx="abcd".indexOf(k);
+  if(idx>-1 && k.length===1){ e.preventDefault(); answer(idx); return; }
+  if(e.key==="Enter"){
+    const a=document.activeElement;
+    if(a && a!==document.body && a.tagName==="BUTTON" && !a.classList.contains("opt")) return; // deixa o botão focado agir
+    e.preventDefault(); next(); return;
+  }
+  if(e.key==="ArrowRight"){ e.preventDefault(); go(S.pos+1); }
+  if(e.key==="ArrowLeft"){ e.preventDefault(); go(S.pos-1); }
+});
+
+render();
+</script>
+</body>
+</html>
